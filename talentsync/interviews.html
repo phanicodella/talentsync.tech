@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync Interview System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        .video-container {
+            position: relative;
+            width: 640px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+        .suspicious-alert {
+            background-color: rgba(220, 53, 69, 0.9);
+            border: 2px solid #dc3545;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-active {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+        .status-warning {
+            background-color: #ffc107;
+        }
+        .status-error {
+            background-color: #dc3545;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .debug-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            display: none;
+        }
+        .debug-panel.visible {
+            display: block;
+        }
+        #audioMeter {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        #audioMeterFill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+        .timer {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col">
+                <h2 class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="bi bi-camera-video me-2"></i>
+                        TalentSync Interview Session
+                        <span id="sessionStatus" class="badge bg-secondary ms-2">Not Started</span>
+                    </div>
+                    <div class="timer" id="timer">00:00</div>
+                </h2>
+            </div>
+        </div>
+        
+        <div class="video-container mb-4">
+            <video id="videoElement" width="640" height="480" autoplay playsinline></video>
+            <div id="liveAnalysis" class="analysis-overlay"></div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col d-flex justify-content-center gap-2">
+                <button id="startButton" class="btn btn-primary">
+                    <i class="bi bi-play-fill"></i> Start Interview
+                </button>
+                <button id="stopButton" class="btn btn-danger" disabled>
+                    <i class="bi bi-stop-fill"></i> End Interview
+                </button>
+                <button id="downloadBtn" class="btn btn-outline-primary" disabled>
+                    <i class="bi bi-download"></i> Download Transcript
+                </button>
+                <button id="toggleDebug" class="btn btn-secondary">
+                    <i class="bi bi-terminal"></i> Toggle Debug Info
+                </button>
+            </div>
+        </div>
+
+        <div id="audioMeter" class="mb-4">
+            <div id="audioMeterFill"></div>
+        </div>
+
+        <div id="behaviorAnalysis" class="mb-4"></div>
+        <div id="openaiAnalysis" class="mb-4"></div>
+        
+        <div id="debugPanel" class="debug-panel">
+            <h5>Debug Information</h5>
+            <pre id="debugInfo"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        // Environment variables (if using Vite)
+        const OPENAI_API_KEY = import.meta.env?.VITE_OPENAI_API_KEY || null;
+
+        // Configuration
+        const CONFIG = {
+            DEBUG_MODE: false,
+            AUDIO_SETTINGS: {
+                sampleRate: 48000,
+                channelCount: 1,
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            SUSPICIOUS_THRESHOLDS: {
+                movementScore: 50000,
+                presenceScore: 30,
+                suspiciousCount: 5
+            },
+            SPEECH_RECOGNITION: {
+                mode: 'browser',
+                language: 'en-US',
+                continuous: true,
+                interim: true
+            }
+        };
+
+        // DOM Elements
+        const elements = {
+            video: document.getElementById('videoElement'),
+            startBtn: document.getElementById('startButton'),
+            stopBtn: document.getElementById('stopButton'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            behaviorAnalysis: document.getElementById('behaviorAnalysis'),
+            openaiAnalysis: document.getElementById('openaiAnalysis'),
+            debugPanel: document.getElementById('debugPanel'),
+            debugInfo: document.getElementById('debugInfo'),
+            toggleDebug: document.getElementById('toggleDebug'),
+            sessionStatus: document.getElementById('sessionStatus'),
+            audioMeterFill: document.getElementById('audioMeterFill'),
+            timer: document.getElementById('timer')
+        };
+
+        // Global state
+        let state = {
+            mediaRecorder: null,
+            monitoringInterval: null,
+            videoStream: null,
+            audioContext: null,
+            audioAnalyser: null,
+            isRecording: false,
+            recognition: null,
+            transcriptText: '',
+            startTime: null,
+            intervalTimer: null
+        };
+
+        // Debug utilities
+        const debug = {
+            log: function(message, data = null) {
+                if (CONFIG.DEBUG_MODE) {
+                    const timestamp = new Date().toISOString();
+                    const logMessage = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
+                    elements.debugInfo.textContent = logMessage + '\n' + elements.debugInfo.textContent;
+                    console.log(message, data);
+                }
+            },
+            error: function(message, error) {
+                console.error(message, error);
+                const errorDetail = error.stack || error.message || error;
+                debug.log(`ERROR: ${message}`, errorDetail);
+            }
+        };
+
+        // Timer functions
+        function startTimer() {
+            state.startTime = new Date();
+            state.intervalTimer = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            if (state.intervalTimer) {
+                clearInterval(state.intervalTimer);
+            }
+        }
+
+        function updateTimer() {
+            if (state.startTime) {
+                const now = new Date();
+                const diff = now - state.startTime;
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                elements.timer.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // Download functionality
+        function downloadTranscript() {
+            if (state.recognition && state.recognition.transcriptText) {
+                const blob = new Blob([state.recognition.transcriptText], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `interview-transcript-${new Date().toISOString()}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+        }
+
+        // [Previous BehaviorMonitor class remains exactly the same]
+
+        // [Previous SpeechRecognitionHandler class remains exactly the same]
+
+        async function startInterview() {
+            try {
+                elements.sessionStatus.textContent = 'Initializing...';
+                elements.sessionStatus.className = 'badge bg-info';
+
+                // Start timer
+                startTimer();
+
+                // Get video stream
+                state.videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true,
+                    audio: true
+                });
+                elements.video.srcObject = state.videoStream;
+                
+                // Initialize behavior monitoring
+                const monitor = new BehaviorMonitor(elements.video);
+                state.monitoringInterval = setInterval(() => monitor.analyzeFrame(), 1000);
+                
+                // Initialize speech recognition
+                state.recognition = new SpeechRecognitionHandler();
+                state.recognition.start();
+                
+                state.isRecording = true;
+                elements.startBtn.disabled = true;
+                elements.stopBtn.disabled = false;
+                elements.downloadBtn.disabled = true;
+                elements.sessionStatus.textContent = 'Recording';
+                elements.sessionStatus.className = 'badge bg-success';
+                
+                debug.log('Interview started successfully');
+            } catch (error) {
+                debug.error('Failed to start interview:', error);
+                elements.sessionStatus.textContent = 'Error';
+                elements.sessionStatus.className = 'badge bg-danger';
+                alert('Failed to start interview. Please ensure camera and microphone permissions are granted.');
+            }
+        }
+
+        async function stopInterview() {
+            try {
+                state.isRecording = false;
+                
+                // Stop timer
+                stopTimer();
+                
+                // Stop speech recognition
+                if (state.recognition) {
+                    state.recognition.stop();
+                }
+                
+                // Stop video stream
+                if (state.videoStream) {
+                    state.videoStream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Clear intervals and reset UI
+                clearInterval(state.monitoringInterval);
+                elements.video.srcObject = null;
+                elements.startBtn.disabled = false;
+                elements.stopBtn.disabled = true;
+                elements.downloadBtn.disabled = false;
+                
+                elements.sessionStatus.textContent = 'Completed';
+                elements.sessionStatus.className = 'badge bg-success';
+                
+                debug.log('Interview stopped successfully');
+                
+                // Save transcript if available
+                if (state.recognition && state.recognition.transcriptText) {
+                    const finalTranscript = state.recognition.transcriptText;
+                    debug.log('Final transcript:', finalTranscript);
+                }
+            } catch (error) {
+                debug.error('Error stopping interview:', error);
+                elements.sessionStatus.textContent = 'Error';
+                elements.sessionStatus.className = 'badge bg-danger';
+            }
+        }
+
+        // Event listeners
+        elements.startBtn.addEventListener('click', startInterview);
+        elements.stopBtn.addEventListener('click', stopInterview);
+        elements.downloadBtn.addEventListener('click', downloadTranscript);
+        elements.toggleDebug.addEventListener('click', () => {
+            CONFIG.DEBUG_MODE = !CONFIG.DEBUG_MODE;
+            elements.debugPanel.classList.toggle('visible');
+            debug.log('Debug mode toggled:', CONFIG.DEBUG_MODE);
+        });
+
+        // Initial setup
+        debug.log('Application initialized');
+    </script>
+</body>
+</html>

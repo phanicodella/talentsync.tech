@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Interview Scheduling</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f4f4; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+    <link href="src/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="text-center mb-0">Schedule Interview</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="interviewForm">
+                            <div id="errorContainer" class="mb-3" style="display: none;"></div>
+                            
+                            <div class="mb-3">
+                                <label for="candidateName" class="form-label">Candidate Name</label>
+                                <input type="text" class="form-control" id="candidateName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="candidateEmail" class="form-label">Candidate Email</label>
+                                <input type="email" class="form-control" id="candidateEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="candidatePhone" class="form-label">Candidate Phone</label>
+                                <input type="tel" class="form-control" id="candidatePhone">
+                            </div>
+                            <div class="mb-3">
+                                <label for="interviewDate" class="form-label">Interview Date and Time</label>
+                                <input type="datetime-local" class="form-control" id="interviewDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="interviewType" class="form-label">Interview Type</label>
+                                <select class="form-select" id="interviewType">
+                                    <option value="technical">Technical Interview</option>
+                                    <option value="hr">HR Interview</option>
+                                    <option value="final">Final Round</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Additional Notes</label>
+                                <textarea class="form-control" id="notes" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Schedule Interview</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="interviews.html" class="btn btn-secondary">View Scheduled Interviews</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('interviewForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Collect form data
+            const name = document.getElementById('candidateName').value.trim();
+            const email = document.getElementById('candidateEmail').value.trim();
+            const phone = document.getElementById('candidatePhone').value.trim();
+            const interviewDate = document.getElementById('interviewDate').value;
+            const interviewType = document.getElementById('interviewType').value;
+            
+            // Validation functions
+            function validateName(name) {
+                return name.length >= 2 && /^[a-zA-Z\s]+$/.test(name);
+            }
+            
+            function validateEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+            
+            function validatePhone(phone) {
+                return phone === '' || /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im.test(phone);
+            }
+            
+            function validateDate(date) {
+                const selectedDate = new Date(date);
+                const now = new Date();
+                return selectedDate > now;
+            }
+            
+            // Validation checks
+            let errors = [];
+            
+            if (!validateName(name)) {
+                errors.push("Please enter a valid name (at least 2 characters, letters only)");
+            }
+            
+            if (!validateEmail(email)) {
+                errors.push("Please enter a valid email address");
+            }
+            
+            if (!validatePhone(phone)) {
+                errors.push("Please enter a valid phone number or leave blank");
+            }
+            
+            if (!validateDate(interviewDate)) {
+                errors.push("Please select a future date and time");
+            }
+            
+            // Display errors or proceed
+            const errorContainer = document.getElementById('errorContainer');
+            if (errors.length > 0) {
+                errorContainer.innerHTML = errors.map(error => 
+                    `<div class="alert alert-danger">${error}</div>`
+                ).join('');
+                errorContainer.style.display = 'block';
+                return;
+            }
+            
+            // Clear any previous errors
+            errorContainer.style.display = 'none';
+            errorContainer.innerHTML = '';
+            
+            // Create interview object
+            const interview = {
+                id: Date.now(),
+                name: name,
+                email: email,
+                phone: phone,
+                date: interviewDate,
+                type: interviewType,
+                notes: document.getElementById('notes').value.trim(),
+                status: 'scheduled'
+            };
+            
+            // Save to local storage
+            let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+            interviews.push(interview);
+            localStorage.setItem('interviews', JSON.stringify(interviews));
+            
+            // Redirect to interviews page
+            window.location.href = 'interviews.html';
+        });
+    </script>
+    <script src="src/js/index.js"></script>
+</body>
+</html>
