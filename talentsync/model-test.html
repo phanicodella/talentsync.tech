@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Test</title>
+</head>
+<body>
+    <h2>Testing Face-API Model Loading</h2>
+    <pre id="results"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
+    <script>
+        async function testModelLoading() {
+            const results = document.getElementById('results');
+            const baseUrl = '/public/models';
+
+            try {
+                // Test direct file access first
+                const testPaths = [
+                    `${baseUrl}/tiny_face_detector/tiny_face_detector_model-weights_manifest.json`,
+                    `${baseUrl}/face_landmark_68/face_landmark_68_model-weights_manifest.json`,
+                    `${baseUrl}/ssd_mobilenetv1/ssd_mobilenetv1_model-weights_manifest.json`,
+                    `${baseUrl}/face_recognition/face_recognition_model-weights_manifest.json`
+                ];
+
+                for (const path of testPaths) {
+                    try {
+                        const response = await fetch(path);
+                        const text = await response.text();
+                        results.textContent += `✅ ${path}: ${response.ok ? 'Accessible' : 'Not Found'}\n`;
+                        try {
+                            JSON.parse(text); // Test if it's valid JSON
+                            results.textContent += `   Valid JSON\n`;
+                        } catch {
+                            results.textContent += `   Invalid JSON\n`;
+                        }
+                    } catch (e) {
+                        results.textContent += `❌ ${path}: ${e.message}\n`;
+                    }
+                }
+
+                results.textContent += '\nTrying to load models...\n';
+
+                // Now try loading the models
+                await faceapi.nets.tinyFaceDetector.loadFromUri(baseUrl);
+                results.textContent += '✅ Tiny Face Detector loaded\n';
+
+                await faceapi.nets.faceLandmark68Net.loadFromUri(baseUrl);
+                results.textContent += '✅ Face Landmark Model loaded\n';
+
+                await faceapi.nets.faceRecognitionNet.loadFromUri(baseUrl);
+                results.textContent += '✅ Face Recognition Model loaded\n';
+
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(baseUrl);
+                results.textContent += '✅ SSD Mobilenet Model loaded\n';
+
+            } catch (error) {
+                results.textContent += `\n❌ Error: ${error.message}\n`;
+                console.error('Loading error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', testModelLoading);
+    </script>
+</body>
+</html>

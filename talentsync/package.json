@@ -1,0 +1,22 @@
+{
+  "name": "talentsync",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "nodemon src/server/server.js",
+    "dev": "nodemon src/server/server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "face-api.js": "^0.22.2",
+    "node-fetch": "^2.7.0"
+  }
+}
