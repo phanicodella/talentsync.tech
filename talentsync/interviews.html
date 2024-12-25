@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,6 +16,7 @@
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
         .analysis-overlay {
             position: absolute;
             top: 10px;
@@ -27,10 +29,12 @@
             backdrop-filter: blur(4px);
             z-index: 100;
         }
+
         .suspicious-alert {
             background-color: rgba(220, 53, 69, 0.9);
             border: 2px solid #dc3545;
         }
+
         .status-indicator {
             display: inline-block;
             width: 10px;
@@ -38,21 +42,34 @@
             border-radius: 50%;
             margin-right: 5px;
         }
+
         .status-active {
             background-color: #28a745;
             animation: pulse 2s infinite;
         }
+
         .status-warning {
             background-color: #ffc107;
         }
+
         .status-error {
             background-color: #dc3545;
         }
+
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
         }
+
         .debug-panel {
             background: #f8f9fa;
             border-radius: 4px;
@@ -62,9 +79,11 @@
             font-size: 0.8em;
             display: none;
         }
+
         .debug-panel.visible {
             display: block;
         }
+
         #audioMeter {
             width: 100%;
             height: 20px;
@@ -73,19 +92,39 @@
             overflow: hidden;
             margin-top: 10px;
         }
+
         #audioMeterFill {
             height: 100%;
             background: #28a745;
             transition: width 0.1s ease;
             width: 0%;
         }
+
         .timer {
             font-family: monospace;
             font-size: 1.2em;
             color: #666;
         }
+
+        .trait-score {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .analysis-card {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
     </style>
 </head>
+
 <body>
     <div class="container mt-4">
         <div class="row mb-4">
@@ -100,7 +139,7 @@
                 </h2>
             </div>
         </div>
-        
+
         <div class="video-container mb-4">
             <video id="videoElement" width="640" height="480" autoplay playsinline></video>
             <div id="liveAnalysis" class="analysis-overlay"></div>
@@ -129,41 +168,17 @@
 
         <div id="behaviorAnalysis" class="mb-4"></div>
         <div id="openaiAnalysis" class="mb-4"></div>
-        
+
         <div id="debugPanel" class="debug-panel">
             <h5>Debug Information</h5>
             <pre id="debugInfo"></pre>
         </div>
     </div>
+    <script src="src/js/services/config.js"></script>
+<script src="src/js/services/openaiService.js"></script>
+    <script>
+        const openaiService = new OpenAIService(config.OPENAI_API_KEY);
 
-    <script type="module">
-        // Environment variables (if using Vite)
-        const OPENAI_API_KEY = import.meta.env?.VITE_OPENAI_API_KEY || null;
-
-        // Configuration
-        const CONFIG = {
-            DEBUG_MODE: false,
-            AUDIO_SETTINGS: {
-                sampleRate: 48000,
-                channelCount: 1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            },
-            SUSPICIOUS_THRESHOLDS: {
-                movementScore: 50000,
-                presenceScore: 30,
-                suspiciousCount: 5
-            },
-            SPEECH_RECOGNITION: {
-                mode: 'browser',
-                language: 'en-US',
-                continuous: true,
-                interim: true
-            }
-        };
-
-        // DOM Elements
         const elements = {
             video: document.getElementById('videoElement'),
             startBtn: document.getElementById('startButton'),
@@ -176,10 +191,10 @@
             toggleDebug: document.getElementById('toggleDebug'),
             sessionStatus: document.getElementById('sessionStatus'),
             audioMeterFill: document.getElementById('audioMeterFill'),
-            timer: document.getElementById('timer')
+            timer: document.getElementById('timer'),
+            liveAnalysis: document.getElementById('liveAnalysis')
         };
 
-        // Global state
         let state = {
             mediaRecorder: null,
             monitoringInterval: null,
@@ -190,27 +205,10 @@
             recognition: null,
             transcriptText: '',
             startTime: null,
-            intervalTimer: null
+            intervalTimer: null,
+            behaviorData: []
         };
 
-        // Debug utilities
-        const debug = {
-            log: function(message, data = null) {
-                if (CONFIG.DEBUG_MODE) {
-                    const timestamp = new Date().toISOString();
-                    const logMessage = `[${timestamp}] ${message}${data ? '\n' + JSON.stringify(data, null, 2) : ''}`;
-                    elements.debugInfo.textContent = logMessage + '\n' + elements.debugInfo.textContent;
-                    console.log(message, data);
-                }
-            },
-            error: function(message, error) {
-                console.error(message, error);
-                const errorDetail = error.stack || error.message || error;
-                debug.log(`ERROR: ${message}`, errorDetail);
-            }
-        };
-
-        // Timer functions
         function startTimer() {
             state.startTime = new Date();
             state.intervalTimer = setInterval(updateTimer, 1000);
@@ -228,63 +226,206 @@
                 const diff = now - state.startTime;
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
-                elements.timer.textContent = 
+                elements.timer.textContent =
                     `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }
         }
 
-        // Download functionality
-        function downloadTranscript() {
-            if (state.recognition && state.recognition.transcriptText) {
-                const blob = new Blob([state.recognition.transcriptText], { type: 'text/plain' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `interview-transcript-${new Date().toISOString()}.txt`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
+        class BehaviorMonitor {
+            constructor(videoElement) {
+                this.videoElement = videoElement;
+                this.canvas = document.createElement('canvas');
+                this.context = this.canvas.getContext('2d');
+                this.lastImageData = null;
+                this.suspiciousCount = 0;
+                this.outOfFrameCount = 0;
+                this.movementHistory = [];
+                this.canvas.width = 640;
+                this.canvas.height = 480;
+            }
+
+            analyzeFrame() {
+                try {
+                    this.context.drawImage(this.videoElement, 0, 0, this.canvas.width, this.canvas.height);
+                    const currentImageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
+
+                    if (this.lastImageData) {
+                        const analysis = this.detectAnomalies(currentImageData);
+                        this.updateUI(analysis);
+                    }
+
+                    this.lastImageData = currentImageData;
+                } catch (error) {
+                    console.error('Frame analysis failed:', error);
+                }
+            }
+
+            detectAnomalies(currentImageData) {
+                let movementScore = 0;
+                let presenceScore = 0;
+
+                if (this.lastImageData) {
+                    for (let i = 0; i < currentImageData.length; i += 16) {
+                        const diff = Math.abs(currentImageData[i] - this.lastImageData[i]);
+                        movementScore += diff;
+                    }
+                }
+
+                presenceScore = this.calculatePresenceScore(currentImageData);
+                this.movementHistory.push(movementScore);
+                if (this.movementHistory.length > 10) this.movementHistory.shift();
+
+                return {
+                    movementScore,
+                    presenceScore,
+                    isHighMovement: movementScore > 50000,
+                    isAbsent: presenceScore < 30,
+                    isErratic: this.detectErraticMovement()
+                };
+            }
+
+            calculatePresenceScore(imageData) {
+                let score = 0;
+                for (let i = 0; i < imageData.length; i += 16) {
+                    const brightness = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+                    if (brightness > 50) score++;
+                }
+                return (score / (imageData.length / 16)) * 100;
+            }
+
+            detectErraticMovement() {
+                if (this.movementHistory.length < 5) return false;
+                const recentAvg = this.movementHistory.slice(-3).reduce((a, b) => a + b, 0) / 3;
+                const previousAvg = this.movementHistory.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
+                return Math.abs(recentAvg - previousAvg) > 30000;
+            }
+
+            updateUI(analysis) {
+                if (analysis.isHighMovement || analysis.isAbsent || analysis.isErratic) {
+                    this.suspiciousCount++;
+                }
+
+                if (analysis.isAbsent) {
+                    this.outOfFrameCount++;
+                }
+
+                const isSuspicious = this.suspiciousCount > 5;
+                elements.liveAnalysis.className = `analysis-overlay ${isSuspicious ? 'suspicious-alert' : ''}`;
+                elements.liveAnalysis.innerHTML = `
+                   <div>
+                       <p>
+                           <span class="status-indicator ${analysis.isHighMovement ? 'status-warning' : 'status-active'}"></span>
+                           Movement: ${analysis.isHighMovement ? '⚠️ High' : '✓ Normal'}
+                       </p>
+                       <p>
+                           <span class="status-indicator ${analysis.isAbsent ? 'status-error' : 'status-active'}"></span>
+                           Presence: ${analysis.isAbsent ? '⚠️ Absent' : '✓ Present'}
+                       </p>
+                       ${isSuspicious ? '<p class="text-warning">⚠️ Suspicious Activity Detected</p>' : ''}
+                   </div>
+               `;
+
+                return {
+                    suspicious: this.suspiciousCount,
+                    outOfFrame: this.outOfFrameCount,
+                    currentState: analysis
+                };
             }
         }
 
-        // [Previous BehaviorMonitor class remains exactly the same]
+        class SpeechRecognitionHandler {
+            constructor() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.recognition = new SpeechRecognition();
+                this.recognition.continuous = true;
+                this.recognition.interimResults = true;
+                this.recognition.lang = 'en-US';
+                this.transcriptText = '';
+                this.setupRecognition();
+            }
 
-        // [Previous SpeechRecognitionHandler class remains exactly the same]
+            setupRecognition() {
+                this.recognition.onresult = (event) => {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript + ' ';
+                            this.transcriptText += transcript + ' ';
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    elements.openaiAnalysis.innerHTML = `
+                       <div class="alert alert-success">
+                           <h5>Interview Transcription</h5>
+                           <p><strong>Full Transcript:</strong></p>
+                           <p>${this.transcriptText}</p>
+                           ${interimTranscript ? `<p><strong>Current:</strong> ${interimTranscript}</p>` : ''}
+                           <div class="mt-3">
+                               <small class="text-muted">Last updated: ${new Date().toLocaleTimeString()}</small>
+                           </div>
+                       </div>
+                   `;
+                };
+
+                this.recognition.onerror = (event) => {
+                    if (event.error === 'no-speech') {
+                        elements.openaiAnalysis.innerHTML = `
+                           <div class="alert alert-warning">
+                               <h5>No Speech Detected</h5>
+                               <p>Please speak to continue the interview.</p>
+                           </div>
+                       `;
+                    }
+                };
+
+                this.recognition.onend = () => {
+                    if (state.isRecording) {
+                        this.recognition.start();
+                    }
+                };
+            }
+
+            start() {
+                this.transcriptText = '';
+                this.recognition.start();
+            }
+
+            stop() {
+                this.recognition.stop();
+            }
+        }
 
         async function startInterview() {
             try {
                 elements.sessionStatus.textContent = 'Initializing...';
                 elements.sessionStatus.className = 'badge bg-info';
 
-                // Start timer
                 startTimer();
 
-                // Get video stream
-                state.videoStream = await navigator.mediaDevices.getUserMedia({ 
+                state.videoStream = await navigator.mediaDevices.getUserMedia({
                     video: true,
                     audio: true
                 });
                 elements.video.srcObject = state.videoStream;
-                
-                // Initialize behavior monitoring
+
                 const monitor = new BehaviorMonitor(elements.video);
                 state.monitoringInterval = setInterval(() => monitor.analyzeFrame(), 1000);
-                
-                // Initialize speech recognition
+
                 state.recognition = new SpeechRecognitionHandler();
                 state.recognition.start();
-                
+
                 state.isRecording = true;
                 elements.startBtn.disabled = true;
                 elements.stopBtn.disabled = false;
                 elements.downloadBtn.disabled = true;
                 elements.sessionStatus.textContent = 'Recording';
                 elements.sessionStatus.className = 'badge bg-success';
-                
-                debug.log('Interview started successfully');
             } catch (error) {
-                debug.error('Failed to start interview:', error);
                 elements.sessionStatus.textContent = 'Error';
                 elements.sessionStatus.className = 'badge bg-danger';
                 alert('Failed to start interview. Please ensure camera and microphone permissions are granted.');
@@ -294,56 +435,179 @@
         async function stopInterview() {
             try {
                 state.isRecording = false;
-                
-                // Stop timer
                 stopTimer();
-                
-                // Stop speech recognition
+
                 if (state.recognition) {
                     state.recognition.stop();
                 }
-                
-                // Stop video stream
+
                 if (state.videoStream) {
                     state.videoStream.getTracks().forEach(track => track.stop());
                 }
-                
-                // Clear intervals and reset UI
+
                 clearInterval(state.monitoringInterval);
                 elements.video.srcObject = null;
                 elements.startBtn.disabled = false;
                 elements.stopBtn.disabled = true;
                 elements.downloadBtn.disabled = false;
-                
+
+                const transcript = state.recognition.transcriptText;
+
+                elements.openaiAnalysis.innerHTML = `
+                   <div class="alert alert-info">
+                       <div class="spinner-border spinner-border-sm" role="status"></div>
+                       Analyzing interview...
+                   </div>
+               `;
+
+                try {
+                    const analysis = await openaiService.analyzeInterview(transcript);
+                    const followUpQuestions = await openaiService.generateFollowUpQuestions(transcript);
+
+                    const fullAnalysis = {
+                        ...analysis,
+                        followUpQuestions
+                    };
+
+                    elements.openaiAnalysis.innerHTML = generateAnalysisHTML(transcript, fullAnalysis);
+                } catch (error) {
+                    elements.openaiAnalysis.innerHTML = `
+                       <div class="alert alert-danger">
+                           <h5>Analysis Failed</h5>
+                           <p>There was an error analyzing the interview. Please try again later.</p>
+                           <small>${error.message}</small>
+                       </div>
+                   `;
+                }
+
+                state.transcriptText = transcript;
                 elements.sessionStatus.textContent = 'Completed';
                 elements.sessionStatus.className = 'badge bg-success';
-                
-                debug.log('Interview stopped successfully');
-                
-                // Save transcript if available
-                if (state.recognition && state.recognition.transcriptText) {
-                    const finalTranscript = state.recognition.transcriptText;
-                    debug.log('Final transcript:', finalTranscript);
-                }
+
             } catch (error) {
-                debug.error('Error stopping interview:', error);
                 elements.sessionStatus.textContent = 'Error';
                 elements.sessionStatus.className = 'badge bg-danger';
             }
         }
 
-        // Event listeners
+        function generateAnalysisHTML(transcript, analysis) {
+            return `
+               <div class="alert alert-success">
+                   <h5>Interview Analysis</h5>
+                   <div class="card analysis-card mb-3">
+                       <div class="card-body">
+                           <h6>Interview Transcript:</h6>
+                           <p class="text-muted">${transcript}</p>
+                       </div>
+                   </div>
+                   <div class="card analysis-card mb-3">
+                       <div class="card-body">
+                           <h6>AI Analysis Results</h6>
+                           <div class="row mt-3">
+                               <div class="col-md-6">
+                                   <h6 class="text-primary">Key Traits Assessment:</h6>
+                                   <ul class="list-unstyled">
+                                       ${Object.entries(analysis.key_traits).map(([trait, score]) => `
+                                           <li class="mb-2">
+                                               <div class="d-flex justify-content-between align-items-center">
+                                                   <span>${trait.replace('_', ' ').toUpperCase()}</span>
+                                                   <span class="trait-score">${Math.round(score * 100)}%</span>
+                                               </div>
+                                               <div class="progress" style="height: 8px;">
+                                                   <div class="progress-bar" role="progressbar" 
+                                                       style="width: ${score * 100}%" 
+                                                       aria-valuenow="${score * 100}" 
+                                                       aria-valuemin="0" 
+                                                       aria-valuemax="100">
+                                                   </div>
+                                               </div>
+                                           </li>
+                                       `).join('')}
+                                   </ul>
+                               </div>
+                               <div class="col-md-6">
+                                   <h6 class="text-primary">Behavioral Indicators:</h6>
+                                   <div class="flags-container">
+                                       ${analysis.behavioral_flags.map(flag => `
+                                           <div class="flag-item">
+                                               <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                               ${flag}
+                                           </div>
+                                       `).join('')}
+                                   </div>
+                               </div>
+                           </div>
+                           <div class="mt-4">
+                               <h6 class="text-primary">Recommendations:</h6>
+                               <div class="row">
+                                   <div class="col-md-6">
+                                       <ul class="list-group">
+                                           ${analysis.recommendations.map(rec => `
+                                               <li class="list-group-item">
+                                                   <i class="bi bi-arrow-right-circle text-primary me-2"></i>
+                                                   ${rec}
+                                               </li>
+                                           `).join('')}
+                                       </ul>
+                                   </div>
+                                   <div class="col-md-6">
+                                       <h6 class="text-warning">Points to Verify:</h6>
+                                       <ul class="list-group">
+                                           ${analysis.risk_factors.map(risk => `
+                                               <li class="list-group-item">
+                                                   <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                                   ${risk}
+                                               </li>
+                                           `).join('')}
+                                       </ul>
+                                   </div>
+                               </div>
+                               <div class="mt-4">
+                                   <h6 class="text-primary">Suggested Follow-up Questions:</h6>
+                                   <ul class="list-group">
+                                       ${analysis.followUpQuestions.map(question => `
+                                           <li class="list-group-item">
+                                               <i class="bi bi-question-circle text-primary me-2"></i>
+                                               ${question}
+                                           </li>
+                                       `).join('')}
+                                   </ul>
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+                   <div class="mt-3 text-end">
+                       <small class="text-muted">Analysis completed at ${new Date().toLocaleTimeString()}</small>
+                   </div>
+               </div>
+           `;
+        }
+
+        function downloadTranscript() {
+            if (state.transcriptText) {
+                const date = new Date().toISOString().slice(0, 10);
+                const time = new Date().toTimeString().slice(0, 8).replace(/:/g, '-');
+                const filename = `interview-transcript-${date}-${time}.txt`;
+
+                const blob = new Blob([state.transcriptText], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
+        }
+
         elements.startBtn.addEventListener('click', startInterview);
         elements.stopBtn.addEventListener('click', stopInterview);
         elements.downloadBtn.addEventListener('click', downloadTranscript);
         elements.toggleDebug.addEventListener('click', () => {
-            CONFIG.DEBUG_MODE = !CONFIG.DEBUG_MODE;
+            config.DEBUG_MODE = !config.DEBUG_MODE;
             elements.debugPanel.classList.toggle('visible');
-            debug.log('Debug mode toggled:', CONFIG.DEBUG_MODE);
         });
-
-        // Initial setup
-        debug.log('Application initialized');
     </script>
+
 </body>
+
 </html>

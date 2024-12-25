@@ -68,7 +68,7 @@ def is_source_file(filename):
         not any(fnmatch.fnmatch(filename.lower(), exclude) for exclude in exclude_files)
     )
 
-def capture_source_code(root_dir='.', output_file='project_source_code.txt'):
+def capture_source_code(root_dir='.', output_file='CompleteSourceCode.txt'):
     """
     Capture all source code files from the project directory.
 
@@ -108,6 +108,6 @@ if __name__ == "__main__":
         current_dir = os.getcwd()
         capture_source_code(current_dir)
         print("Source code capture completed successfully!")
-        print("Output saved to: project_source_code.txt")
+        print("Output saved to: CompleteSourceCode.txt")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
