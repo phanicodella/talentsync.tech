@@ -63,11 +63,14 @@ class OpenAIService {
         const now = Date.now();
         const timeElapsed = now - this.lastResponseTime;
         
-        // Check if enough time has passed and response is substantial
         const isValidResponse = response && response.trim().length >= 10;
         const hasEnoughTimeElapsed = timeElapsed > this.minResponseInterval;
         
         return isValidResponse && hasEnoughTimeElapsed;
+    }
+
+    isInterviewComplete() {
+        return this.currentQuestionIndex === this.questions.length - 1;
     }
 
     nextQuestion(currentResponse) {
@@ -114,6 +117,7 @@ class OpenAIService {
             .join('\n\n');
     }
 
+    // Existing analysis methods...
     async analyzeInterview(transcript) {
         try {
             console.log('Analyzing transcript:', transcript);
