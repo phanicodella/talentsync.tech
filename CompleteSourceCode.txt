@@ -1,0 +1,3542 @@
+filepath:///cg_cat.py /// /// ///
+file code{
+import os
+import fnmatch
+from pathlib import Path
+
+def should_exclude_dir(dir_name):
+    """Check if directory should be excluded."""
+    exclude_patterns = {
+        'node_modules',
+        'venv',
+        '.git',
+        'build',
+        'dist',
+        'bin',
+        'obj',
+        '__pycache__',
+        '.vs',
+        '.idea',
+        'packages',
+        'vendor',
+        'bower_components',
+        'jspm_packages',
+        'lib',
+        'out',
+        'target',
+        'Debug',
+        'Release'
+    }
+    return any(dir_name.lower().startswith(pattern) for pattern in exclude_patterns)
+
+def is_source_file(filename):
+    """Check if file is a source code file and not unnecessary manifests or configs."""
+    source_patterns = [
+        '*.js', '*.jsx', '*.ts', '*.tsx',  # JavaScript/TypeScript
+        '*.py',                            # Python
+        '*.cs',                            # C#
+        '*.css', '*.scss', '*.sass',       # Stylesheets
+        '*.html', '*.htm',                 # HTML
+        '*.java',                          # Java
+        '*.cpp', '*.hpp', '*.c', '*.h',    # C/C++
+        '*.go',                            # Go
+        '*.rb',                            # Ruby
+        '*.php',                           # PHP
+        '*.swift',                         # Swift
+        '*.rs',                            # Rust
+        '*.vue', '*.svelte',               # Web frameworks
+        '*.xml', '*.json',                 # Data formats
+        '*.yaml', '*.yml'                  # Configuration files
+    ]
+    exclude_files = [
+        '*-lock.json',                     # Exclude lock files
+        '*-weights_manifest.json',         # Manifest files
+        '*.eslint*',                       # ESLint configuration
+        '*.prettier*',                     # Prettier configuration
+        '*.log', 
+        '*.lock',                           # Log files
+        'README.md',                       # Documentation
+        '*.md'                             # Other markdown files
+    ]
+    include_files = [
+        'package.json'                     # Explicitly include package.json
+    ]
+
+    # Match only source files and exclude unnecessary files
+    if filename in include_files:
+        return True
+    return (
+        any(fnmatch.fnmatch(filename.lower(), pattern) for pattern in source_patterns) and
+        not any(fnmatch.fnmatch(filename.lower(), exclude) for exclude in exclude_files)
+    )
+
+def capture_source_code(root_dir='.', output_file='CompleteSourceCode.txt'):
+    """
+    Capture all source code files from the project directory.
+
+    Args:
+        root_dir (str): Root directory to start scanning from
+        output_file (str): Output file path
+    """
+    root_path = Path(root_dir).absolute()
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for root, dirs, files in os.walk(root_dir):
+            # Remove excluded directories
+            dirs[:] = [d for d in dirs if not should_exclude_dir(d)]
+
+            for file in files:
+                if is_source_file(file):
+                    file_path = Path(root) / file
+                    try:
+                        # Use os.path.relpath for more reliable path calculation
+                        relative_path = os.path.relpath(file_path, root_path)
+
+                        with open(file_path, 'r', encoding='utf-8') as source_file:
+                            content = source_file.read()
+
+                            # Write file path and content with separator
+                            f.write(f"filepath:///{relative_path} /// /// ///\n")
+                            f.write("file code{\n")
+                            f.write(content)
+                            f.write("\n}\n\n")
+
+                    except Exception as e:
+                        print(f"Error processing file {file_path}: {str(e)}")
+
+
+if __name__ == "__main__":
+    try:
+        current_dir = os.getcwd()
+        capture_source_code(current_dir)
+        print("Source code capture completed successfully!")
+        print("Output saved to: CompleteSourceCode.txt")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+
+}
+
+filepath:///index.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Interview Scheduling</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f4f4; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+    <link href="src/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="text-center mb-0">Schedule Interview</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="interviewForm">
+                            <div id="errorContainer" class="mb-3" style="display: none;"></div>
+                            
+                            <div class="mb-3">
+                                <label for="candidateName" class="form-label">Candidate Name</label>
+                                <input type="text" class="form-control" id="candidateName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="candidateEmail" class="form-label">Candidate Email</label>
+                                <input type="email" class="form-control" id="candidateEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="candidatePhone" class="form-label">Candidate Phone</label>
+                                <input type="tel" class="form-control" id="candidatePhone">
+                            </div>
+                            <div class="mb-3">
+                                <label for="interviewDate" class="form-label">Interview Date and Time</label>
+                                <input type="datetime-local" class="form-control" id="interviewDate" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="interviewType" class="form-label">Interview Type</label>
+                                <select class="form-select" id="interviewType">
+                                    <option value="technical">Technical Interview</option>
+                                    <option value="hr">HR Interview</option>
+                                    <option value="final">Final Round</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Additional Notes</label>
+                                <textarea class="form-control" id="notes" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Schedule Interview</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="interviews.html" class="btn btn-secondary">View Scheduled Interviews</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('interviewForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Collect form data
+            const name = document.getElementById('candidateName').value.trim();
+            const email = document.getElementById('candidateEmail').value.trim();
+            const phone = document.getElementById('candidatePhone').value.trim();
+            const interviewDate = document.getElementById('interviewDate').value;
+            const interviewType = document.getElementById('interviewType').value;
+            
+            // Validation functions
+            function validateName(name) {
+                return name.length >= 2 && /^[a-zA-Z\s]+$/.test(name);
+            }
+            
+            function validateEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+            
+            function validatePhone(phone) {
+                return phone === '' || /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im.test(phone);
+            }
+            
+            function validateDate(date) {
+                const selectedDate = new Date(date);
+                const now = new Date();
+                return selectedDate > now;
+            }
+            
+            // Validation checks
+            let errors = [];
+            
+            if (!validateName(name)) {
+                errors.push("Please enter a valid name (at least 2 characters, letters only)");
+            }
+            
+            if (!validateEmail(email)) {
+                errors.push("Please enter a valid email address");
+            }
+            
+            if (!validatePhone(phone)) {
+                errors.push("Please enter a valid phone number or leave blank");
+            }
+            
+            if (!validateDate(interviewDate)) {
+                errors.push("Please select a future date and time");
+            }
+            
+            // Display errors or proceed
+            const errorContainer = document.getElementById('errorContainer');
+            if (errors.length > 0) {
+                errorContainer.innerHTML = errors.map(error => 
+                    `<div class="alert alert-danger">${error}</div>`
+                ).join('');
+                errorContainer.style.display = 'block';
+                return;
+            }
+            
+            // Clear any previous errors
+            errorContainer.style.display = 'none';
+            errorContainer.innerHTML = '';
+            
+            // Create interview object
+            const interview = {
+                id: Date.now(),
+                name: name,
+                email: email,
+                phone: phone,
+                date: interviewDate,
+                type: interviewType,
+                notes: document.getElementById('notes').value.trim(),
+                status: 'scheduled'
+            };
+            
+            // Save to local storage
+            let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+            interviews.push(interview);
+            localStorage.setItem('interviews', JSON.stringify(interviews));
+            
+            // Redirect to interviews page
+            window.location.href = 'interviews.html';
+        });
+    </script>
+    <script src="src/js/index.js"></script>
+</body>
+</html>
+}
+
+filepath:///interviews.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync Interview System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        .video-container {
+            position: relative;
+            width: 640px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+
+        .suspicious-alert {
+            background-color: rgba(220, 53, 69, 0.9);
+            border: 2px solid #dc3545;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-warning {
+            background-color: #ffc107;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .debug-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        .debug-panel.visible {
+            display: block;
+        }
+
+        #audioMeter {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #audioMeterFill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .trait-score {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .analysis-card {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        .main-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .video-section {
+        position: sticky;
+        top: 20px;
+    }
+
+    .video-container {
+        position: relative;
+        width: 100%;
+        margin: 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .interview-section {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls-section {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+
+    #videoElement {
+        width: 100%;
+        max-width: 640px;
+        border-radius: 8px;
+    }
+
+    @media (max-width: 1200px) {
+        .main-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .video-section {
+            position: relative;
+        }
+    }
+    </style>
+</head>
+
+<body>
+    
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-camera-video me-2"></i>
+                    TalentSync Interview Session
+                    <span id="sessionStatus" class="badge bg-secondary ms-2">Not Started</span>
+                </div>
+                <div class="timer" id="timer">00:00</div>
+            </h2>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="video-section">
+            <div class="video-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <div id="liveAnalysis" class="analysis-overlay"></div>
+            </div>
+            
+            <div class="controls-section">
+                <div class="d-flex justify-content-center gap-2">
+                    <button id="startButton" class="btn btn-primary">
+                        <i class="bi bi-play-fill"></i> Start Interview
+                    </button>
+                    <button id="stopButton" class="btn btn-danger" disabled>
+                        <i class="bi bi-stop-fill"></i> End Interview
+                    </button>
+                    <button id="downloadBtn" class="btn btn-outline-primary" disabled>
+                        <i class="bi bi-download"></i> Download Transcript
+                    </button>
+                    <button id="toggleDebug" class="btn btn-secondary">
+                        <i class="bi bi-terminal"></i> Toggle Debug Info
+                    </button>
+                </div>
+                
+                <div id="audioMeter" class="mt-3">
+                    <div id="audioMeterFill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="interview-section">
+            <div id="openaiAnalysis" class="p-3"></div>
+            <div id="debugPanel" class="debug-panel mx-3 mb-3">
+                <h5>Debug Information</h5>
+                <pre id="debugInfo"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+    <script src="src/js/services/config.js"></script>
+<script src="src/js/services/openaiService.js"></script>
+<script>
+let openaiService;
+
+document.addEventListener('DOMContentLoaded', () => {
+    openaiService = new OpenAIService();
+
+    const elements = {
+        video: document.getElementById('videoElement'),
+        startBtn: document.getElementById('startButton'),
+        stopBtn: document.getElementById('stopButton'),
+        downloadBtn: document.getElementById('downloadBtn'),
+        behaviorAnalysis: document.getElementById('behaviorAnalysis'),
+        openaiAnalysis: document.getElementById('openaiAnalysis'),
+        debugPanel: document.getElementById('debugPanel'),
+        debugInfo: document.getElementById('debugInfo'),
+        toggleDebug: document.getElementById('toggleDebug'),
+        sessionStatus: document.getElementById('sessionStatus'),
+        audioMeterFill: document.getElementById('audioMeterFill'),
+        timer: document.getElementById('timer'),
+        liveAnalysis: document.getElementById('liveAnalysis')
+    };
+
+    let state = {
+        mediaRecorder: null,
+        monitoringInterval: null,
+        videoStream: null,
+        audioContext: null,
+        audioAnalyser: null,
+        isRecording: false,
+        recognition: null,
+        transcriptText: '',
+        startTime: null,
+        intervalTimer: null,
+        behaviorData: []
+    };
+
+    function startTimer() {
+        state.startTime = new Date();
+        state.intervalTimer = setInterval(updateTimer, 1000);
+    }
+
+    function stopTimer() {
+        if (state.intervalTimer) {
+            clearInterval(state.intervalTimer);
+        }
+    }
+
+    function updateTimer() {
+        if (state.startTime) {
+            const now = new Date();
+            const diff = now - state.startTime;
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            elements.timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    class BehaviorMonitor {
+        constructor(videoElement) {
+            this.videoElement = videoElement;
+            this.canvas = document.createElement('canvas');
+            this.context = this.canvas.getContext('2d');
+            this.lastImageData = null;
+            this.suspiciousCount = 0;
+            this.outOfFrameCount = 0;
+            this.movementHistory = [];
+            this.canvas.width = 640;
+            this.canvas.height = 480;
+            this.movementThreshold = 50000;
+            this.previousFrameData = null;
+        }
+
+        analyzeFrame() {
+            try {
+                this.context.drawImage(this.videoElement, 0, 0, this.canvas.width, this.canvas.height);
+                const currentImageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
+
+                if (this.previousFrameData) {
+                    const analysis = this.detectAnomalies(currentImageData);
+                    this.updateUI(analysis);
+                }
+
+                this.previousFrameData = currentImageData;
+            } catch (error) {
+                console.error('Frame analysis failed:', error);
+            }
+        }
+
+        detectAnomalies(currentImageData) {
+            let movementScore = 0;
+            let presenceScore = 0;
+
+            if (this.previousFrameData) {
+                for (let i = 0; i < currentImageData.length; i += 16) {
+                    const diff = Math.abs(currentImageData[i] - this.previousFrameData[i]);
+                    movementScore += diff;
+                }
+                presenceScore = this.calculatePresenceScore(currentImageData);
+            }
+
+            this.movementHistory.push(movementScore);
+            if (this.movementHistory.length > 10) {
+                this.movementHistory.shift();
+            }
+
+            return {
+                movementScore,
+                presenceScore,
+                isHighMovement: movementScore > this.movementThreshold,
+                isAbsent: presenceScore < 30,
+                isErratic: this.detectErraticMovement()
+            };
+        }
+
+        calculatePresenceScore(imageData) {
+            let score = 0;
+            for (let i = 0; i < imageData.length; i += 16) {
+                const brightness = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+                if (brightness > 50) score++;
+            }
+            return (score / (imageData.length / 16)) * 100;
+        }
+
+        detectErraticMovement() {
+            if (this.movementHistory.length < 5) return false;
+
+            const recentAvg = this.movementHistory.slice(-3).reduce((a, b) => a + b, 0) / 3;
+            const previousAvg = this.movementHistory.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
+            
+            return Math.abs(recentAvg - previousAvg) > 30000;
+        }
+
+        updateUI(analysis) {
+            if (analysis.isHighMovement || analysis.isAbsent || analysis.isErratic) {
+                this.suspiciousCount++;
+            }
+
+            if (analysis.isAbsent) {
+                this.outOfFrameCount++;
+            }
+
+            const isSuspicious = this.suspiciousCount > 5;
+            const analysisDiv = elements.liveAnalysis;
+            
+            analysisDiv.className = `analysis-overlay ${isSuspicious ? 'suspicious-alert' : ''} visible`;
+            analysisDiv.innerHTML = `
+                <div>
+                    <p>
+                        <span class="status-indicator ${analysis.isHighMovement ? 'status-warning' : 'status-active'}"></span>
+                        Movement: ${analysis.isHighMovement ? '⚠️ High' : '✓ Normal'}
+                    </p>
+                    <p>
+                        <span class="status-indicator ${analysis.isAbsent ? 'status-error' : 'status-active'}"></span>
+                        Presence: ${analysis.isAbsent ? '⚠️ Absent' : '✓ Present'}
+                    </p>
+                    ${isSuspicious ? '<p class="text-warning">⚠️ Suspicious Activity Detected</p>' : ''}
+                </div>
+            `;
+        }
+    }
+    class SpeechRecognitionHandler {
+    constructor() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            throw new Error('Speech Recognition not supported in this browser');
+        }
+        this.recognition = new SpeechRecognition();
+        this.transcriptText = '';
+        this.currentQuestionIndex = 0;
+        this.isActive = false;
+        this.setupRecognition();
+    }
+
+    setupRecognition() {
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.maxAlternatives = 1;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+            console.log('Recognition started');
+            this.isActive = true;
+            if (elements.video) {
+                elements.video.muted = true;
+            }
+        };
+
+        this.recognition.onend = () => {
+            console.log('Recognition ended');
+            if (this.isActive) {
+                try {
+                    setTimeout(() => this.recognition.start(), 50);
+                } catch (e) {
+                    console.error('Failed to restart recognition:', e);
+                }
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Recognition error:', event.error);
+            if (event.error !== 'no-speech' && this.isActive) {
+                this.isActive = false;
+            }
+        };
+
+        // Add the onresult handler here
+        this.recognition.onresult = this.onresult.bind(this);
+    }
+
+    onresult(event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+                this.transcriptText += transcript + ' ';
+                
+                // Check if response is complete enough to move to next question
+                const nextQuestion = openaiService.nextQuestion(this.transcriptText);
+                if (nextQuestion.index !== this.currentQuestionIndex) {
+                    this.currentQuestionIndex = nextQuestion.index;
+                    this.transcriptText = ''; // Clear for next response
+                }
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+
+        this.updateDisplay(interimTranscript);
+    }
+
+    updateDisplay(interim = '') {
+        const currentQ = openaiService.getCurrentQuestion();
+        const transcriptHistory = openaiService.transcriptHistory
+            .map(item => `
+                <div class="qa-pair mb-3 p-2 border-bottom">
+                    <div class="question">
+                        <span class="badge bg-primary me-2">${item.category}</span>
+                        <strong>Q:</strong> ${item.question}
+                    </div>
+                    <div class="answer ms-3 mt-1">
+                        <strong>A:</strong> ${item.response}
+                    </div>
+                </div>
+            `)
+            .join('');
+
+        elements.openaiAnalysis.innerHTML = `
+            <div class="alert alert-success">
+                <h5>Interview Progress</h5>
+                <div class="current-question mb-3 p-3 bg-light border-start border-4 border-primary">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-primary mb-0">Question ${currentQ.index} of ${currentQ.total}</h6>
+                        <span class="badge bg-primary">${currentQ.category}</span>
+                    </div>
+                    <p class="fs-5 mb-0">${currentQ.question}</p>
+                </div>
+                
+                <div class="transcript mt-4">
+                    ${transcriptHistory}
+                    
+                    <div class="current-response">
+                        <div class="question">
+                            <span class="badge bg-success me-2">Current</span>
+                            <strong>Q:</strong> ${currentQ.question}
+                        </div>
+                        <div class="answer ms-3 mt-1">
+                            <strong>A:</strong> ${this.transcriptText}
+                            ${interim ? `<span class="text-muted"><em>${interim}</em></span>` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <small class="text-muted d-flex align-items-center">
+                        <span class="badge ${this.isActive ? 'bg-success' : 'bg-secondary'} me-2">
+                            ${this.isActive ? 'Listening' : 'Paused'}
+                        </span>
+                        Last updated: ${new Date().toLocaleTimeString()}
+                    </small>
+                </div>
+            </div>
+        `;
+    }
+
+    start() {
+        this.isActive = true;
+        this.transcriptText = '';
+        
+        if (elements.video) {
+            elements.video.muted = true;
+        }
+        
+        try {
+            this.recognition.start();
+        } catch (e) {
+            console.error('Recognition start error:', e);
+            this.isActive = false;
+            throw e;
+        }
+    }
+
+    stop() {
+        this.isActive = false;
+        if (this.recognition) {
+            try {
+                this.recognition.stop();
+            } catch (e) {
+                console.error('Recognition stop error:', e);
+            }
+        }
+    }
+}// Add this CSS to your stylesheet
+const style = document.createElement('style');
+style.textContent = `
+    .pulse-animation {
+        animation: pulse 1s ease-in-out;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .current-question {
+        transition: all 0.3s ease-in-out;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: rgba(13, 110, 253, 0.05);
+        border-left: 4px solid #0d6efd;
+    }
+`;
+document.head.appendChild(style);
+    function generateAnalysisHTML(transcript, analysis) {
+        return `
+            <div class="alert alert-success">
+                <h5>Interview Analysis</h5>
+                <div class="card analysis-card mb-3">
+                    <div class="card-body">
+                        <h6>Interview Transcript:</h6>
+                        <p class="text-muted">${transcript}</p>
+                    </div>
+                </div>
+                <div class="card analysis-card mb-3">
+                    <div class="card-body">
+                        <h6>AI Analysis Results</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Key Traits Assessment:</h6>
+                                <ul class="list-unstyled">
+                                    ${Object.entries(analysis.key_traits).map(([trait, score]) => `
+                                        <li class="mb-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>${trait.replace('_', ' ').toUpperCase()}</span>
+                                                <span class="trait-score">${Math.round(score * 100)}%</span>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                    style="width: ${score * 100}%" 
+                                                    aria-valuenow="${score * 100}" 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Behavioral Indicators:</h6>
+                                <div class="flags-container">
+                                    ${analysis.behavioral_flags.map(flag => `
+                                        <div class="flag-item">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            ${flag}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h6 class="text-primary">Recommendations:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        ${analysis.recommendations.map(rec => `
+                                            <li class="list-group-item">
+                                                <i class="bi bi-arrow-right-circle text-primary me-2"></i>
+                                                ${rec}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-warning">Points to Verify:</h6>
+                                    <ul class="list-group">
+                                        ${analysis.risk_factors.map(risk => `
+                                            <li class="list-group-item">
+                                                <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                                ${risk}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <h6 class="text-primary">Suggested Follow-up Questions:</h6>
+                                <ul class="list-group">
+                                    ${analysis.followUpQuestions.map(question => `
+                                        <li class="list-group-item">
+                                            <i class="bi bi-question-circle text-primary me-2"></i>
+                                            ${question}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <small class="text-muted">Analysis completed at ${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        `;
+    }
+
+    async function startInterview() {
+    try {
+        elements.sessionStatus.textContent = 'Initializing...';
+        elements.sessionStatus.className = 'badge bg-info';
+
+        startTimer();
+
+        // Get media stream with specific constraints
+        state.videoStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 30 }
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: false
+            }
+        });
+
+        // Set up video with muted audio
+        elements.video.srcObject = state.videoStream;
+        elements.video.muted = true;  // Prevent echo
+
+        const monitor = new BehaviorMonitor(elements.video);
+        state.monitoringInterval = setInterval(() => monitor.analyzeFrame(), 1000);
+
+        state.recognition = new SpeechRecognitionHandler();
+        state.recognition.start();
+
+        state.isRecording = true;
+        elements.startBtn.disabled = true;
+        elements.stopBtn.disabled = false;
+        elements.downloadBtn.disabled = true;
+        elements.sessionStatus.textContent = 'Recording';
+        elements.sessionStatus.className = 'badge bg-success';
+    } catch (error) {
+        console.error('Start interview error:', error);
+        elements.sessionStatus.textContent = 'Error';
+        elements.sessionStatus.className = 'badge bg-danger';
+        alert('Failed to start interview. Please ensure camera and microphone permissions are granted.');
+    }
+}
+async function stopInterview() {
+    try {
+        state.isRecording = false;
+        stopTimer();
+
+        if (state.recognition) {
+            state.recognition.stop();
+        }
+
+        if (state.videoStream) {
+            state.videoStream.getTracks().forEach(track => track.stop());
+        }
+
+        clearInterval(state.monitoringInterval);
+        elements.video.srcObject = null;
+        elements.startBtn.disabled = false;
+        elements.stopBtn.disabled = true;
+        elements.downloadBtn.disabled = false;
+
+        elements.liveAnalysis.className = 'analysis-overlay';
+        elements.liveAnalysis.innerHTML = '';
+
+        // Get full transcript from OpenAI service history
+        const fullTranscript = openaiService.getFormattedTranscript();
+        
+        if (!fullTranscript || fullTranscript.trim().length === 0) {
+            elements.openaiAnalysis.innerHTML = `
+                <div class="alert alert-warning">
+                    <h5>No Interview Content</h5>
+                    <p>No interview responses were recorded. Please try again.</p>
+                </div>
+            `;
+            return;
+        }
+
+        elements.openaiAnalysis.innerHTML = `
+            <div class="alert alert-info">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                Analyzing interview...
+            </div>
+        `;
+
+        try {
+            const [analysis, followUpQuestions] = await Promise.all([
+                openaiService.analyzeInterview(fullTranscript),
+                openaiService.generateFollowUpQuestions(fullTranscript)
+            ]);
+
+            const fullAnalysis = {
+                ...analysis,
+                followUpQuestions
+            };
+
+            elements.openaiAnalysis.innerHTML = generateAnalysisHTML(fullTranscript, fullAnalysis);
+            elements.downloadBtn.disabled = false;
+        } catch (error) {
+            console.error('Analysis error:', error);
+            elements.openaiAnalysis.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Analysis Failed</h5>
+                    <p>There was an error analyzing the interview. Please try again later.</p>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        }
+
+        state.transcriptText = fullTranscript;
+        elements.sessionStatus.textContent = 'Completed';
+        elements.sessionStatus.className = 'badge bg-success';
+
+    } catch (error) {
+        console.error('Stop interview error:', error);
+        elements.sessionStatus.textContent = 'Error';
+        elements.sessionStatus.className = 'badge bg-danger';
+    }
+}
+    function downloadTranscript() {
+        if (state.transcriptText) {
+            const date = new Date().toISOString().slice(0, 10);
+            const time = new Date().toTimeString().slice(0, 8).replace(/:/g, '-');
+            const filename = `interview-transcript-${date}-${time}.txt`;
+
+            const blob = new Blob([state.transcriptText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    }
+
+    elements.startBtn.addEventListener('click', startInterview);
+    elements.stopBtn.addEventListener('click', stopInterview);
+    elements.downloadBtn.addEventListener('click', downloadTranscript);
+    elements.toggleDebug.addEventListener('click', () => {
+        config.DEBUG_MODE = !config.DEBUG_MODE;
+        elements.debugPanel.classList.toggle('visible');
+    });
+});
+</script>
+
+</body>
+
+</html>
+}
+
+filepath:///model-test.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Test</title>
+</head>
+<body>
+    <h2>Testing Face-API Model Loading</h2>
+    <pre id="results"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
+    <script>
+        async function testModelLoading() {
+            const results = document.getElementById('results');
+            const baseUrl = '/public/models';
+
+            try {
+                // Test direct file access first
+                const testPaths = [
+                    `${baseUrl}/tiny_face_detector/tiny_face_detector_model-weights_manifest.json`,
+                    `${baseUrl}/face_landmark_68/face_landmark_68_model-weights_manifest.json`,
+                    `${baseUrl}/ssd_mobilenetv1/ssd_mobilenetv1_model-weights_manifest.json`,
+                    `${baseUrl}/face_recognition/face_recognition_model-weights_manifest.json`
+                ];
+
+                for (const path of testPaths) {
+                    try {
+                        const response = await fetch(path);
+                        const text = await response.text();
+                        results.textContent += `✅ ${path}: ${response.ok ? 'Accessible' : 'Not Found'}\n`;
+                        try {
+                            JSON.parse(text); // Test if it's valid JSON
+                            results.textContent += `   Valid JSON\n`;
+                        } catch {
+                            results.textContent += `   Invalid JSON\n`;
+                        }
+                    } catch (e) {
+                        results.textContent += `❌ ${path}: ${e.message}\n`;
+                    }
+                }
+
+                results.textContent += '\nTrying to load models...\n';
+
+                // Now try loading the models
+                await faceapi.nets.tinyFaceDetector.loadFromUri(baseUrl);
+                results.textContent += '✅ Tiny Face Detector loaded\n';
+
+                await faceapi.nets.faceLandmark68Net.loadFromUri(baseUrl);
+                results.textContent += '✅ Face Landmark Model loaded\n';
+
+                await faceapi.nets.faceRecognitionNet.loadFromUri(baseUrl);
+                results.textContent += '✅ Face Recognition Model loaded\n';
+
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(baseUrl);
+                results.textContent += '✅ SSD Mobilenet Model loaded\n';
+
+            } catch (error) {
+                results.textContent += `\n❌ Error: ${error.message}\n`;
+                console.error('Loading error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', testModelLoading);
+    </script>
+</body>
+</html>
+}
+
+filepath:///package.json /// /// ///
+file code{
+{
+  "name": "talentsync",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "nodemon src/server/server.js",
+    "dev": "nodemon src/server/server.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "face-api.js": "^0.22.2",
+    "node-fetch": "^2.7.0"
+  }
+}
+
+}
+
+filepath:///src\css\styles.css /// /// ///
+file code{
+body {
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 600px;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+#errorContainer .alert {
+    margin-bottom: 10px;
+}
+.analysis-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    /* Add these lines */
+    display: none;  /* Hide by default */
+    min-width: 200px;
+}
+
+
+.analysis-overlay.visible {
+    display: block;  /* Show when has visible class */
+}
+}
+
+filepath:///src\js\index.js /// /// ///
+file code{
+// src/js/index.js
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('interviewForm');
+    
+    if (!form) return; // Guard clause if we're not on the form page
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Form handling logic
+        const formData = {
+            name: document.getElementById('candidateName').value.trim(),
+            email: document.getElementById('candidateEmail').value.trim(),
+            phone: document.getElementById('candidatePhone').value.trim(),
+            date: document.getElementById('interviewDate').value,
+            type: document.getElementById('interviewType').value,
+            notes: document.getElementById('notes').value.trim()
+        };
+        
+        if (validateForm(formData)) {
+            saveInterview(formData);
+            window.location.href = 'interviews.html';
+        }
+    });
+});
+
+function validateForm(data) {
+    const errors = [];
+    
+    // Name validation
+    if (!data.name || data.name.length < 2 || !/^[a-zA-Z\s]+$/.test(data.name)) {
+        errors.push("Please enter a valid name (at least 2 characters, letters only)");
+    }
+    
+    // Email validation
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.push("Please enter a valid email address");
+    }
+    
+    // Phone validation (optional)
+    if (data.phone && !/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im.test(data.phone)) {
+        errors.push("Please enter a valid phone number or leave blank");
+    }
+    
+    // Date validation
+    const selectedDate = new Date(data.date);
+    if (!data.date || selectedDate <= new Date()) {
+        errors.push("Please select a future date and time");
+    }
+    
+    // Display errors if any
+    const errorContainer = document.getElementById('errorContainer');
+    if (errors.length > 0) {
+        errorContainer.innerHTML = errors.map(error => 
+            `<div class="alert alert-danger">${error}</div>`
+        ).join('');
+        errorContainer.style.display = 'block';
+        return false;
+    }
+    
+    // Clear previous errors
+    errorContainer.style.display = 'none';
+    errorContainer.innerHTML = '';
+    return true;
+}
+
+function saveInterview(data) {
+    const interview = {
+        id: Date.now(),
+        ...data,
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+    };
+    
+    let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+    interviews.push(interview);
+    localStorage.setItem('interviews', JSON.stringify(interviews));
+}
+}
+
+filepath:///src\js\interview-manager.js /// /// ///
+file code{
+// src/js/interview-manager.js
+import VideoAnalysisService from './services/videoAnalysisService.js';
+import config from './config.js';
+
+class InterviewManager {
+    constructor() {
+        this.videoAnalysisService = new VideoAnalysisService();
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.analysisResults = {
+            behavioral: null,
+            openai: null
+        };
+    }
+
+    async initialize() {
+        await this.videoAnalysisService.loadModels();
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        const startBtn = document.getElementById('startInterview');
+        const endBtn = document.getElementById('endInterview');
+
+        startBtn.addEventListener('click', () => this.startInterview());
+        endBtn.addEventListener('click', () => this.endInterview());
+    }
+
+    async startInterview() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 640, height: 480 },
+                audio: true 
+            });
+
+            const videoElement = document.getElementById('localVideo');
+            videoElement.srcObject = stream;
+
+            this.mediaRecorder = new MediaRecorder(stream);
+            this.recordedChunks = [];
+
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+
+            this.mediaRecorder.onstop = () => this.processRecording();
+
+            // Start behavioral analysis
+            this.startBehavioralAnalysis(videoElement);
+
+            this.mediaRecorder.start();
+            this.updateUI('recording');
+        } catch (error) {
+            console.error('Error starting interview:', error);
+            this.showError('Failed to start interview: ' + error.message);
+        }
+    }
+
+    async startBehavioralAnalysis(videoElement) {
+        try {
+            const analysisInterval = setInterval(async () => {
+                if (this.mediaRecorder?.state === 'recording') {
+                    const frameAnalysis = await this.videoAnalysisService.analyzeFacialBehavior(
+                        videoElement,
+                        this.updateLiveAnalysis.bind(this)
+                    );
+                    this.updateLiveAnalysis(frameAnalysis);
+                } else {
+                    clearInterval(analysisInterval);
+                }
+            }, 1000); // Analyze every second
+        } catch (error) {
+            console.error('Error in behavioral analysis:', error);
+            this.showError('Behavioral analysis error: ' + error.message);
+        }
+    }
+
+    updateLiveAnalysis(analysis) {
+        const liveAnalysisDiv = document.getElementById('liveAnalysis');
+        if (!liveAnalysisDiv) return;
+
+        const suspicionScore = this.videoAnalysisService.calculateSuspicionScore(analysis);
+        
+        liveAnalysisDiv.innerHTML = `
+            <div class="alert ${suspicionScore > 50 ? 'alert-warning' : 'alert-info'}">
+                <h5>Live Analysis</h5>
+                <p>Attention Score: ${100 - Math.round((analysis.lookAway / analysis.totalFrames) * 100)}%</p>
+                <p>Behavior Confidence: ${100 - suspicionScore}%</p>
+                ${suspicionScore > 50 ? '<p class="text-danger">⚠️ Unusual behavior detected</p>' : ''}
+            </div>
+        `;
+    }
+
+    async processRecording() {
+        const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+        
+        try {
+            const behavioralReport = await this.videoAnalysisService.generateAnalysisReport(
+                this.analysisResults.behavioral
+            );
+
+            this.showResults({
+                behavioral: behavioralReport,
+                recording: URL.createObjectURL(blob)
+            });
+        } catch (error) {
+            console.error('Error processing recording:', error);
+            this.showError('Failed to process recording: ' + error.message);
+        }
+    }
+
+    showResults(results) {
+        const resultsDiv = document.getElementById('analysisResults');
+        resultsDiv.innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h4>Interview Analysis Results</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Behavioral Analysis</h5>
+                    <div class="alert ${results.behavioral.suspicionScore > 50 ? 'alert-warning' : 'alert-info'}">
+                        <p>Suspicion Score: ${results.behavioral.suspicionScore}%</p>
+                        <h6>Warning Flags:</h6>
+                        <ul>
+                            ${results.behavioral.flags.map(flag => `<li>${flag}</li>`).join('')}
+                        </ul>
+                        <h6>Recommendations:</h6>
+                        <ul>
+                            ${results.behavioral.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h5>Recording</h5>
+                        <video controls src="${results.recording}" class="w-100"></video>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.textContent = message;
+        document.getElementById('analysisResults').prepend(errorDiv);
+    }
+
+    updateUI(state) {
+        const startBtn = document.getElementById('startInterview');
+        const endBtn = document.getElementById('endInterview');
+        
+        if (state === 'recording') {
+            startBtn.disabled = true;
+            endBtn.disabled = false;
+        } else {
+            startBtn.disabled = false;
+            endBtn.disabled = true;
+        }
+    }
+
+    endInterview() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+
+        const videoElement = document.getElementById('localVideo');
+        if (videoElement.srcObject) {
+            videoElement.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        this.updateUI('ended');
+    }
+}
+
+export default InterviewManager;
+}
+
+filepath:///src\js\interviews.js /// /// ///
+file code{
+document.addEventListener('DOMContentLoaded', () => {
+    function renderInterviews() {
+        const interviewsList = document.getElementById('interviewsList');
+        const interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+        
+        interviewsList.innerHTML = ''; // Clear existing rows
+        
+        if (interviews.length === 0) {
+            interviewsList.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">No interviews scheduled yet.</td>
+                </tr>
+            `;
+            return;
+        }
+        
+        interviews.forEach((interview, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${interview.name}</td>
+                <td>${interview.email}</td>
+                <td>${new Date(interview.date).toLocaleString()}</td>
+                <td>${interview.type}</td>
+                <td>
+                    <span class="badge ${
+                        interview.status === 'scheduled' ? 'bg-primary' : 
+                        interview.status === 'completed' ? 'bg-success' : 'bg-warning'
+                    }">
+                        ${interview.status}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger me-1" onclick="deleteInterview(${index})">Delete</button>
+                    <button class="btn btn-sm btn-secondary" onclick="updateStatus(${index})">Update Status</button>
+                </td>
+            `;
+            interviewsList.appendChild(row);
+        });
+    }
+
+    window.deleteInterview = function(index) {
+        const interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+        interviews.splice(index, 1);
+        localStorage.setItem('interviews', JSON.stringify(interviews));
+        renderInterviews();
+    }
+
+    window.updateStatus = function(index) {
+        const interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+        const statuses = ['scheduled', 'completed', 'cancelled'];
+        const currentStatusIndex = statuses.indexOf(interviews[index].status);
+        interviews[index].status = statuses[(currentStatusIndex + 1) % statuses.length];
+        localStorage.setItem('interviews', JSON.stringify(interviews));
+        renderInterviews();
+    }
+
+    // Export functionality
+    document.getElementById('exportButton').addEventListener('click', function() {
+        const interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+        
+        if (interviews.length === 0) {
+            alert('No interviews to export.');
+            return;
+        }
+        
+        function convertToCSV(data) {
+            const headers = ['Name', 'Email', 'Phone', 'Date', 'Type', 'Status', 'Notes'];
+            
+            const csvRows = data.map(interview => [
+                interview.name,
+                interview.email,
+                interview.phone,
+                new Date(interview.date).toLocaleString(),
+                interview.type,
+                interview.status,
+                interview.notes.replace(/,/g, ';')
+            ]);
+            
+            return [
+                headers.join(','),
+                ...csvRows.map(row => row.map(field => 
+                    `"${field}"`
+                ).join(','))
+            ].join('\n');
+        }
+        
+        const csvContent = convertToCSV(interviews);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        const filename = `talentsync_interviews_${new Date().toISOString().split('T')[0]}.csv`;
+        
+        if (navigator.msSaveBlob) {
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    });
+
+    // Initial render
+    renderInterviews();
+});
+}
+
+filepath:///src\js\models.js /// /// ///
+file code{
+// src/js/models.js
+const loadModels = async () => {
+    try {
+        // First verify the JSON files
+        const baseUrl = window.location.origin + '/public/models';
+        const verifyModel = async (path) => {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`Failed to load ${path}`);
+            const json = await response.json(); // Verify it's valid JSON
+            return json;
+        };
+
+        console.log('Verifying model files...');
+        const modelPaths = {
+            tinyFaceDetector: '/tiny_face_detector/tiny_face_detector_model-weights_manifest.json',
+            faceLandmark: '/face_landmark_68/face_landmark_68_model-weights_manifest.json',
+            ssdMobilenet: '/ssd_mobilenetv1/ssd_mobilenetv1_model-weights_manifest.json',
+            faceRecognition: '/face_recognition/face_recognition_model-weights_manifest.json'
+        };
+
+        // Verify each model file
+        for (const [key, path] of Object.entries(modelPaths)) {
+            const fullPath = baseUrl + path;
+            console.log(`Verifying ${key} at ${fullPath}`);
+            await verifyModel(fullPath);
+            console.log(`✓ ${key} verified`);
+        }
+
+        // Now load the models
+        console.log('Loading models...');
+        const modelPromises = [
+            faceapi.nets.tinyFaceDetector.load(baseUrl),
+            faceapi.nets.faceLandmark68Net.load(baseUrl),
+            faceapi.nets.faceRecognitionNet.load(baseUrl),
+            faceapi.nets.ssdMobilenetv1.load(baseUrl)
+        ];
+
+        await Promise.all(modelPromises);
+        console.log('All models loaded successfully');
+        return true;
+    } catch (error) {
+        console.error('Model loading error:', error);
+        throw error;
+    }
+};
+
+// Export for use in other files
+window.loadFaceApiModels = loadModels;
+}
+
+filepath:///src\js\services\audioService.js /// /// ///
+file code{
+// src/js/services/audioService.js
+import config from './config.js';
+
+class AudioService {
+    constructor() {
+        this.audioContext = null;
+        this.analyser = null;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+        this.qualityMetrics = {
+            volume: 0,
+            noiseLevel: 0,
+            clarity: 0
+        };
+        this.toneAnalysis = {
+            pitch: [],
+            emotion: null,
+            confidence: 0
+        };
+    }
+
+    async initialize() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+            return true;
+        } catch (error) {
+            console.error('Audio initialization failed:', error);
+            throw error;
+        }
+    }
+
+    async startRecording(stream) {
+        const audioTrack = stream.getAudioTracks()[0];
+        const source = this.audioContext.createMediaStreamSource(new MediaStream([audioTrack]));
+        source.connect(this.analyser);
+
+        this.mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm',
+            audioBitsPerSecond: 128000
+        });
+
+        this.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                this.audioChunks.push(event.data);
+            }
+        };
+
+        this.mediaRecorder.start(1000);
+        this.startAudioAnalysis();
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+        this.stopAudioAnalysis();
+        return new Blob(this.audioChunks, { type: 'audio/webm' });
+    }
+
+    startAudioAnalysis() {
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+
+        const analyze = () => {
+            this.analyser.getFloatTimeDomainData(dataArray);
+            
+            this.qualityMetrics = {
+                volume: this.calculateVolume(dataArray),
+                noiseLevel: this.calculateNoiseLevel(dataArray),
+                clarity: this.calculateClarity(dataArray)
+            };
+
+            this.toneAnalysis = {
+                pitch: this.analyzePitch(dataArray),
+                emotion: this.analyzeEmotion(dataArray),
+                confidence: this.calculateConfidence(dataArray)
+            };
+
+            if (this.onAnalysis) {
+                this.onAnalysis(this.qualityMetrics, this.toneAnalysis);
+            }
+
+            this.analysisFrame = requestAnimationFrame(analyze);
+        };
+
+        this.analysisFrame = requestAnimationFrame(analyze);
+    }
+
+    stopAudioAnalysis() {
+        if (this.analysisFrame) {
+            cancelAnimationFrame(this.analysisFrame);
+        }
+    }
+
+    calculateVolume(dataArray) {
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += Math.abs(dataArray[i]);
+        }
+        return (sum / dataArray.length) * 100;
+    }
+
+    calculateNoiseLevel(dataArray) {
+        let variance = 0;
+        const mean = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        
+        for (let i = 0; i < dataArray.length; i++) {
+            variance += Math.pow(dataArray[i] - mean, 2);
+        }
+        
+        return Math.sqrt(variance / dataArray.length) * 100;
+    }
+
+    calculateClarity(dataArray) {
+        const frequencies = new Float32Array(this.analyser.frequencyBinCount);
+        this.analyser.getFloatFrequencyData(frequencies);
+        
+        let signalPower = 0;
+        let noisePower = 0;
+        
+        for (let i = 0; i < frequencies.length; i++) {
+            if (i < frequencies.length * 0.1 || i > frequencies.length * 0.9) {
+                noisePower += Math.pow(10, frequencies[i] / 10);
+            } else {
+                signalPower += Math.pow(10, frequencies[i] / 10);
+            }
+        }
+        
+        return (signalPower / (noisePower + 1)) * 100;
+    }
+
+    analyzePitch(dataArray) {
+        const frequencies = new Float32Array(this.analyser.frequencyBinCount);
+        this.analyser.getFloatFrequencyData(frequencies);
+        
+        let maxFrequency = 0;
+        let maxAmplitude = -Infinity;
+        
+        for (let i = 0; i < frequencies.length; i++) {
+            if (frequencies[i] > maxAmplitude) {
+                maxAmplitude = frequencies[i];
+                maxFrequency = i * (this.audioContext.sampleRate / this.analyser.fftSize);
+            }
+        }
+        
+        return maxFrequency;
+    }
+
+    analyzeEmotion(dataArray) {
+        const frequencies = new Float32Array(this.analyser.frequencyBinCount);
+        this.analyser.getFloatFrequencyData(frequencies);
+        
+        const energyBands = {
+            low: 0,
+            mid: 0,
+            high: 0
+        };
+        
+        for (let i = 0; i < frequencies.length; i++) {
+            const frequency = i * (this.audioContext.sampleRate / this.analyser.fftSize);
+            const amplitude = Math.pow(10, frequencies[i] / 20);
+            
+            if (frequency < 500) energyBands.low += amplitude;
+            else if (frequency < 2000) energyBands.mid += amplitude;
+            else energyBands.high += amplitude;
+        }
+        
+        if (energyBands.high > energyBands.mid && energyBands.high > energyBands.low) {
+            return 'excited';
+        } else if (energyBands.low > energyBands.mid && energyBands.low > energyBands.high) {
+            return 'calm';
+        } else {
+            return 'neutral';
+        }
+    }
+
+    calculateConfidence(dataArray) {
+        let steadiness = 0;
+        let previousValue = dataArray[0];
+        
+        for (let i = 1; i < dataArray.length; i++) {
+            steadiness += Math.abs(dataArray[i] - previousValue);
+            previousValue = dataArray[i];
+        }
+        
+        return Math.max(0, 100 - (steadiness * 1000));
+    }
+
+    getAudioQualityStatus() {
+        const status = {
+            volume: this.qualityMetrics.volume > 30 && this.qualityMetrics.volume < 90,
+            noise: this.qualityMetrics.noiseLevel < 30,
+            clarity: this.qualityMetrics.clarity > 70
+        };
+
+        return {
+            overall: Object.values(status).every(s => s),
+            details: status
+        };
+    }
+}
+
+export default new AudioService();
+}
+
+filepath:///src\js\services\config.js /// /// ///
+file code{
+// src/js/services/config.js
+const config = {
+    OPENAI_API_KEY: '',
+    API_BASE_URL: 'http://localhost:3000',
+    
+    openai: {
+        model: 'gpt-4',
+        maxTokens: 1000,
+        temperature: 0.7,
+        analyzeInterval: 30000 // 30 seconds between analyses
+    },
+
+    features: {
+        faceRecognition: true,
+        speechAnalysis: true,
+        nlpAnalysis: true,
+        realTimeAnalysis: true
+    },
+
+    interview: {
+        maxDuration: 3600, // 1 hour
+        defaultTimeLimit: 1800, // 30 minutes
+        allowedFileTypes: ['video/webm', 'video/mp4'],
+        maxFileSize: 100 * 1024 * 1024, // 100MB
+        recordingQuality: {
+            audio: {
+                sampleRate: 48000,
+                channelCount: 2,
+                echoCancellation: true,
+                noiseSuppression: true
+            },
+            video: {
+                width: 1280,
+                height: 720,
+                frameRate: 30
+            }
+        }
+    },
+
+    storage: {
+        type: 'localStorage',
+        encryptionEnabled: true
+    },
+    
+    DEBUG_MODE: false
+};
+
+window.config = config;
+}
+
+filepath:///src\js\services\emailService.js /// /// ///
+file code{
+// src/js/services/emailService.js
+import nodemailer from 'nodemailer';
+import config from './config.js';
+import { encryptData } from './encryptionService.js';
+
+class EmailService {
+    constructor() {
+        this.transporter = nodemailer.createTransport(config.SMTP_CONFIG);
+    }
+
+    async sendInterviewInvite(interview) {
+        const template = this.getInterviewInviteTemplate(interview);
+        await this.sendEmail({
+            to: interview.email,
+            subject: `Interview Scheduled - ${interview.type}`,
+            html: template
+        });
+
+        this.scheduleReminders(interview);
+    }
+
+    async sendInterviewReminder(interview) {
+        const template = this.getReminderTemplate(interview);
+        await this.sendEmail({
+            to: interview.email,
+            subject: `Reminder: Upcoming Interview - ${interview.type}`,
+            html: template
+        });
+    }
+
+    async scheduleReminders(interview) {
+        const interviewDate = new Date(interview.date);
+        
+        for (const hours of config.interview.reminderIntervals) {
+            const reminderDate = new Date(interviewDate.getTime() - (hours * 60 * 60 * 1000));
+            const now = new Date();
+            
+            if (reminderDate > now) {
+                setTimeout(() => {
+                    this.sendInterviewReminder(interview);
+                }, reminderDate.getTime() - now.getTime());
+            }
+        }
+    }
+
+    async sendEmail(options) {
+        try {
+            const encryptedContent = encryptData(options.html);
+            await this.transporter.sendMail({
+                from: config.SMTP_CONFIG.auth.user,
+                to: options.to,
+                subject: options.subject,
+                html: encryptedContent,
+                headers: {
+                    'X-Priority': '1',
+                    'X-Encrypted': 'true'
+                }
+            });
+            this.logEmailSent(options.to, options.subject);
+        } catch (error) {
+            console.error('Email sending failed:', error);
+            throw error;
+        }
+    }
+
+    getInterviewInviteTemplate(interview) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Interview Scheduled</h2>
+                <p>Dear ${interview.name},</p>
+                <p>Your ${interview.type} interview has been scheduled.</p>
+                <div style="background: #f5f5f5; padding: 15px; margin: 20px 0;">
+                    <p><strong>Date:</strong> ${new Date(interview.date).toLocaleString()}</p>
+                    <p><strong>Type:</strong> ${interview.type}</p>
+                    <p><strong>Location:</strong> Online Video Interview</p>
+                </div>
+                <p><a href="${config.API_BASE_URL}/interview/${interview.id}" 
+                      style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    Join Interview
+                </a></p>
+                <p>Please ensure:</p>
+                <ul>
+                    <li>Stable internet connection</li>
+                    <li>Working camera and microphone</li>
+                    <li>Quiet environment</li>
+                </ul>
+                <p>Best regards,<br>TalentSync Team</p>
+            </div>
+        `;
+    }
+
+    getReminderTemplate(interview) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Interview Reminder</h2>
+                <p>Dear ${interview.name},</p>
+                <p>This is a reminder of your upcoming ${interview.type} interview.</p>
+                <div style="background: #f5f5f5; padding: 15px; margin: 20px 0;">
+                    <p><strong>Date:</strong> ${new Date(interview.date).toLocaleString()}</p>
+                    <p><strong>Type:</strong> ${interview.type}</p>
+                </div>
+                <p><a href="${config.API_BASE_URL}/interview/${interview.id}" 
+                      style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    Join Interview
+                </a></p>
+            </div>
+        `;
+    }
+
+    logEmailSent(recipient, subject) {
+        const log = {
+            timestamp: new Date().toISOString(),
+            recipient,
+            subject,
+            success: true
+        };
+        
+        let emailLogs = JSON.parse(localStorage.getItem('emailLogs') || '[]');
+        emailLogs.push(log);
+        localStorage.setItem('emailLogs', JSON.stringify(emailLogs));
+    }
+}
+
+export default new EmailService();
+}
+
+filepath:///src\js\services\faceAnalysisService.js /// /// ///
+file code{
+// src/js/services/faceAnalysisService.js
+class FaceAnalysisService {
+    constructor() {
+        this.isModelLoaded = false;
+        this.lastFrameTime = Date.now();
+        this.frameCounter = 0;
+        this.suspiciousActivityCount = 0;
+        this.outOfFrameCount = 0;
+    }
+
+    async initialize() {
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.load('/models'),
+                faceapi.nets.faceLandmark68Net.load('/models'),
+                faceapi.nets.faceExpressionNet.load('/models')
+            ]);
+            this.isModelLoaded = true;
+            console.log('Face models loaded successfully');
+            return true;
+        } catch (error) {
+            console.error('Error loading face models:', error);
+            throw new Error('Failed to load face detection models');
+        }
+    }
+
+    async analyzeFrame(videoElement) {
+        if (!this.isModelLoaded) {
+            throw new Error('Face models not loaded');
+        }
+
+        const now = Date.now();
+        if (now - this.lastFrameTime < 100) { // Limit to 10 FPS
+            return null;
+        }
+        this.lastFrameTime = now;
+
+        try {
+            const detection = await faceapi.detectSingleFace(
+                videoElement,
+                new faceapi.TinyFaceDetectorOptions()
+            ).withFaceLandmarks().withFaceExpressions();
+
+            if (!detection) {
+                this.outOfFrameCount++;
+                return {
+                    status: 'not_detected',
+                    outOfFrameCount: this.outOfFrameCount,
+                    message: 'No face detected'
+                };
+            }
+
+            const analysis = this.analyzeBehavior(detection);
+            this.frameCounter++;
+
+            return {
+                status: 'detected',
+                analysis,
+                frameCount: this.frameCounter,
+                outOfFrameCount: this.outOfFrameCount,
+                suspiciousCount: this.suspiciousActivityCount
+            };
+        } catch (error) {
+            console.error('Frame analysis error:', error);
+            return {
+                status: 'error',
+                message: error.message
+            };
+        }
+    }
+
+    analyzeBehavior(detection) {
+        const analysis = {
+            attention: this.calculateAttention(detection),
+            expressions: detection.expressions,
+            headPose: this.estimateHeadPose(detection.landmarks),
+            suspiciousActivity: false,
+            warnings: []
+        };
+
+        // Check for suspicious patterns
+        if (analysis.attention < 0.6) {
+            analysis.warnings.push('Low attention detected');
+            this.suspiciousActivityCount++;
+        }
+
+        if (this.isErraticMovement(detection.landmarks)) {
+            analysis.warnings.push('Erratic movement detected');
+            this.suspiciousActivityCount++;
+        }
+
+        if (this.detectUnusualExpressions(detection.expressions)) {
+            analysis.warnings.push('Unusual expression patterns');
+            this.suspiciousActivityCount++;
+        }
+
+        analysis.suspiciousActivity = analysis.warnings.length > 0;
+
+        return analysis;
+    }
+
+    calculateAttention(detection) {
+        const landmarks = detection.landmarks.positions;
+        const eyePoints = landmarks.slice(36, 48); // Eye landmarks
+        
+        // Calculate eye aspect ratio to detect looking away
+        const leftEye = eyePoints.slice(0, 6);
+        const rightEye = eyePoints.slice(6, 12);
+        
+        const leftEAR = this.getEyeAspectRatio(leftEye);
+        const rightEAR = this.getEyeAspectRatio(rightEye);
+        
+        const averageEAR = (leftEAR + rightEAR) / 2;
+        return Math.min(Math.max(averageEAR / 0.3, 0), 1); // Normalize between 0 and 1
+    }
+
+    getEyeAspectRatio(eye) {
+        const verticalDist1 = this.getDistance(eye[1], eye[5]);
+        const verticalDist2 = this.getDistance(eye[2], eye[4]);
+        const horizontalDist = this.getDistance(eye[0], eye[3]);
+        return (verticalDist1 + verticalDist2) / (2 * horizontalDist);
+    }
+
+    getDistance(point1, point2) {
+        return Math.sqrt(
+            Math.pow(point2.x - point1.x, 2) + 
+            Math.pow(point2.y - point1.y, 2)
+        );
+    }
+
+    estimateHeadPose(landmarks) {
+        const nose = landmarks.positions[30];
+        const leftEye = landmarks.positions[36];
+        const rightEye = landmarks.positions[45];
+        
+        const eyeCenter = {
+            x: (leftEye.x + rightEye.x) / 2,
+            y: (leftEye.y + rightEye.y) / 2
+        };
+        
+        return {
+            yaw: (nose.x - eyeCenter.x) / (rightEye.x - leftEye.x),
+            pitch: (nose.y - eyeCenter.y) / (rightEye.x - leftEye.x)
+        };
+    }
+
+    isErraticMovement(landmarks) {
+        const nose = landmarks.positions[30];
+        if (!this.lastNosePosition) {
+            this.lastNosePosition = nose;
+            return false;
+        }
+
+        const movement = this.getDistance(nose, this.lastNosePosition);
+        this.lastNosePosition = nose;
+        
+        return movement > 20; // Threshold for erratic movement
+    }
+
+    detectUnusualExpressions(expressions) {
+        const dominantExpression = Object.entries(expressions)
+            .reduce((a, b) => a[1] > b[1] ? a : b)[0];
+        
+        const unusualExpressions = ['angry', 'disgusted', 'fearful'];
+        return unusualExpressions.includes(dominantExpression);
+    }
+
+    getAnalysisSummary() {
+        return {
+            totalFrames: this.frameCounter,
+            outOfFramePercentage: (this.outOfFrameCount / this.frameCounter) * 100,
+            suspiciousActivityPercentage: (this.suspiciousActivityCount / this.frameCounter) * 100
+        };
+    }
+
+    reset() {
+        this.frameCounter = 0;
+        this.suspiciousActivityCount = 0;
+        this.outOfFrameCount = 0;
+        this.lastNosePosition = null;
+    }
+}
+
+window.FaceAnalysisService = new FaceAnalysisService();
+}
+
+filepath:///src\js\services\interviewSessionManager.js /// /// ///
+file code{
+// src/js/services/interviewSessionManager.js
+class InterviewSessionManager {
+    constructor() {
+        this.currentSession = null;
+        this.recordingTimer = null;
+        this.maxDuration = window.config.interview.maxDuration;
+        this.services = {
+            face: window.FaceAnalysisService,
+            voice: window.VoiceAnalysisService,
+            openai: window.OpenAIService
+        };
+        this.analysisData = {
+            behavioral: [],
+            voice: [],
+            transcript: ''
+        };
+    }
+
+    async initializeSession(sessionConfig = {}) {
+        try {
+            await Promise.all([
+                this.services.face.initialize(),
+                this.services.voice.initialize()
+            ]);
+
+            this.currentSession = {
+                id: `session_${Date.now()}`,
+                startTime: new Date(),
+                config: {
+                    ...window.config.interview,
+                    ...sessionConfig
+                },
+                status: 'initialized'
+            };
+
+            return this.currentSession;
+        } catch (error) {
+            console.error('Session initialization failed:', error);
+            throw error;
+        }
+    }
+
+    async startRecording() {
+        if (!this.currentSession) {
+            throw new Error('Session not initialized');
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: this.currentSession.config.recordingQuality.video,
+                audio: this.currentSession.config.recordingQuality.audio
+            });
+
+            // Start face analysis
+            this.startFaceAnalysis(stream);
+
+            // Start voice analysis
+            await this.startVoiceAnalysis(stream);
+
+            // Start session timer
+            this.startSessionTimer();
+
+            this.currentSession.status = 'recording';
+            this.currentSession.stream = stream;
+
+            return true;
+        } catch (error) {
+            console.error('Recording start failed:', error);
+            throw error;
+        }
+    }
+
+    startFaceAnalysis(stream) {
+        const videoTrack = stream.getVideoTracks()[0];
+        const videoElement = document.getElementById('videoElement');
+        videoElement.srcObject = new MediaStream([videoTrack]);
+
+        this.faceAnalysisInterval = setInterval(async () => {
+            const analysis = await this.services.face.analyzeFrame(videoElement);
+            if (analysis) {
+                this.analysisData.behavioral.push({
+                    timestamp: Date.now(),
+                    ...analysis
+                });
+                this.updateLiveAnalysis(analysis);
+            }
+        }, 1000);
+    }
+
+    async startVoiceAnalysis(stream) {
+        this.services.voice.setTranscriptUpdateCallback(this.handleTranscriptUpdate.bind(this));
+        this.services.voice.setVolumeUpdateCallback(this.handleVolumeUpdate.bind(this));
+        await this.services.voice.startRecording(stream);
+    }
+
+    handleTranscriptUpdate(data) {
+        this.analysisData.transcript = data.final;
+        this.analysisData.voice.push({
+            timestamp: Date.now(),
+            ...data.analysis
+        });
+        this.updateTranscriptDisplay(data);
+    }
+
+    handleVolumeUpdate(data) {
+        const meter = document.getElementById('audioMeterFill');
+        if (meter) {
+            meter.style.width = `${data.volume}%`;
+            meter.style.backgroundColor = this.getVolumeColor(data);
+        }
+    }
+
+    getVolumeColor(data) {
+        if (data.volume < 30) return '#dc3545'; // Too quiet
+        if (data.volume > 80) return '#ffc107'; // Too loud
+        return '#28a745'; // Good
+    }
+
+    updateLiveAnalysis(analysis) {
+        const liveAnalysis = document.getElementById('liveAnalysis');
+        if (liveAnalysis) {
+            const alertLevel = this.calculateAlertLevel(analysis);
+            liveAnalysis.className = `analysis-overlay ${alertLevel}`;
+            liveAnalysis.innerHTML = this.generateLiveAnalysisHTML(analysis);
+        }
+    }
+
+    calculateAlertLevel(analysis) {
+        if (analysis.suspiciousCount > 5) return 'suspicious-alert';
+        if (analysis.outOfFrameCount > 10) return 'warning-alert';
+        return '';
+    }
+
+    generateLiveAnalysisHTML(analysis) {
+        return `
+            <div>
+                <p>
+                    <span class="status-indicator ${analysis.status === 'detected' ? 'status-active' : 'status-warning'}"></span>
+                    Face Detection: ${analysis.status === 'detected' ? '✓ Active' : '⚠️ Check Position'}
+                </p>
+                <p>
+                    <span class="status-indicator ${analysis.analysis?.attention > 0.7 ? 'status-active' : 'status-warning'}"></span>
+                    Attention: ${Math.round((analysis.analysis?.attention || 0) * 100)}%
+                </p>
+                ${analysis.warnings?.length ? `
+                    <div class="warnings">
+                        ${analysis.warnings.map(w => `<p class="text-warning">⚠️ ${w}</p>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    updateTranscriptDisplay(data) {
+        const transcriptElement = document.getElementById('openaiAnalysis');
+        if (transcriptElement) {
+            transcriptElement.innerHTML = `
+                <div class="alert alert-info">
+                    <h5>Interview Transcription</h5>
+                    <p><strong>Current Transcript:</strong></p>
+                    <p>${data.final}</p>
+                    ${data.interim ? `<p><strong>Current:</strong> ${data.interim}</p>` : ''}
+                    <div class="mt-3">
+                        <small class="text-muted">Last updated: ${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    startSessionTimer() {
+        const timerElement = document.getElementById('timer');
+        const startTime = Date.now();
+
+        this.recordingTimer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+
+            if (timerElement) {
+                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            if (elapsed >= this.maxDuration) {
+                this.stopRecording('timeout');
+            }
+        }, 1000);
+    }
+
+    async stopRecording(reason = 'manual') {
+        if (!this.currentSession || this.currentSession.status !== 'recording') {
+            return;
+        }
+
+        clearInterval(this.recordingTimer);
+        clearInterval(this.faceAnalysisInterval);
+
+        // Stop all tracks
+        this.currentSession.stream.getTracks().forEach(track => track.stop());
+
+        // Stop voice analysis
+        const voiceData = await this.services.voice.stopRecording();
+
+        // Generate final analysis
+        const finalAnalysis = await this.generateFinalAnalysis();
+
+        this.currentSession.status = 'completed';
+        this.currentSession.endTime = new Date();
+        this.currentSession.endReason = reason;
+        this.currentSession.analysis = finalAnalysis;
+
+        return finalAnalysis;
+    }
+
+    async generateFinalAnalysis() {
+        const transcript = this.analysisData.transcript;
+        
+        try {
+            const [openAiAnalysis, followUpQuestions] = await Promise.all([
+                this.services.openai.analyzeInterview(transcript),
+                this.services.openai.generateFollowUpQuestions(transcript)
+            ]);
+
+            const behavioralSummary = this.summarizeBehavioralData();
+            const voiceSummary = this.summarizeVoiceData();
+
+            return {
+                transcript,
+                openAiAnalysis,
+                followUpQuestions,
+                behavioral: behavioralSummary,
+                voice: voiceSummary,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            console.error('Analysis generation failed:', error);
+            throw error;
+        }
+    }
+
+    summarizeBehavioralData() {
+        const totalFrames = this.analysisData.behavioral.length;
+        if (totalFrames === 0) return null;
+
+        const summary = {
+            attentionScore: 0,
+            suspiciousCount: 0,
+            outOfFrameCount: 0,
+            warnings: []
+        };
+
+        this.analysisData.behavioral.forEach(frame => {
+            if (frame.analysis?.attention) {
+                summary.attentionScore += frame.analysis.attention;
+            }
+            if (frame.suspiciousCount) summary.suspiciousCount += frame.suspiciousCount;
+            if (frame.outOfFrameCount) summary.outOfFrameCount += frame.outOfFrameCount;
+            if (frame.analysis?.warnings) {
+                summary.warnings.push(...frame.analysis.warnings);
+            }
+        });
+
+        summary.attentionScore = summary.attentionScore / totalFrames;
+        summary.warnings = [...new Set(summary.warnings)]; // Remove duplicates
+
+        return summary;
+    }
+
+    summarizeVoiceData() {
+        const voiceData = this.analysisData.voice;
+        if (voiceData.length === 0) return null;
+
+        return {
+            averageVolume: voiceData.reduce((sum, data) => sum + data.volume, 0) / voiceData.length,
+            clarityScore: voiceData.reduce((sum, data) => sum + data.clarity, 0) / voiceData.length,
+            confidenceScore: voiceData.reduce((sum, data) => sum + data.confidence, 0) / voiceData.length,
+            wordsPerMinute: this.services.voice.calculateSpeakingPace()
+        };
+    }
+
+    getSessionData() {
+        return this.currentSession;
+    }
+
+    reset() {
+        if (this.currentSession?.stream) {
+            this.currentSession.stream.getTracks().forEach(track => track.stop());
+        }
+        
+        clearInterval(this.recordingTimer);
+        clearInterval(this.faceAnalysisInterval);
+        
+        this.currentSession = null;
+        this.analysisData = {
+            behavioral: [],
+            voice: [],
+            transcript: ''
+        };
+        
+        this.services.voice.reset();
+        this.services.face.reset();
+    }
+}
+
+window.InterviewSessionManager = new InterviewSessionManager();
+}
+
+filepath:///src\js\services\openaiService.js /// /// ///
+file code{
+// src/js/services/openaiService.js
+class OpenAIService {
+    constructor(apiKey) {
+        if (!window.config) {
+            console.error('Config not loaded');
+            return;
+        }
+        this.apiKey = apiKey || window.config.OPENAI_API_KEY;
+        this.baseURL = `${window.config.API_BASE_URL}/api`;
+        this.currentQuestionIndex = 0;
+        this.transcriptHistory = [];
+        this.lastResponseTime = 0;
+        this.minResponseInterval = 3000;
+        
+        this.questions = [
+            {
+                category: "Introduction",
+                question: "Please introduce yourself and tell us about your background."
+            },
+            {
+                category: "Experience",
+                question: "What relevant experience do you have for this position?"
+            },
+            {
+                category: "Technical Skills",
+                question: "Could you describe your technical skills and how they align with this role?"
+            },
+            {
+                category: "Problem Solving",
+                question: "Tell me about a challenging problem you solved in your previous work."
+            },
+            {
+                category: "Team Work",
+                question: "How do you approach working in a team environment?"
+            },
+            {
+                category: "Leadership",
+                question: "Have you ever led a project or team? Please describe your experience."
+            },
+            {
+                category: "Goals",
+                question: "What are your career goals and how does this position fit into them?"
+            },
+            {
+                category: "Closing",
+                question: "Do you have any questions for us?"
+            }
+        ];
+    }
+
+    getCurrentQuestion() {
+        if (this.currentQuestionIndex < this.questions.length) {
+            return {
+                ...this.questions[this.currentQuestionIndex],
+                index: this.currentQuestionIndex + 1,
+                total: this.questions.length
+            };
+        }
+        return this.questions[this.questions.length - 1];
+    }
+
+    canMoveToNextQuestion(response) {
+        const now = Date.now();
+        const timeElapsed = now - this.lastResponseTime;
+        
+        // Check if enough time has passed and response is substantial
+        const isValidResponse = response && response.trim().length >= 10;
+        const hasEnoughTimeElapsed = timeElapsed > this.minResponseInterval;
+        
+        return isValidResponse && hasEnoughTimeElapsed;
+    }
+
+    nextQuestion(currentResponse) {
+        if (!this.canMoveToNextQuestion(currentResponse)) {
+            return this.getCurrentQuestion();
+        }
+
+        if (currentResponse && currentResponse.trim()) {
+            this.addToTranscriptHistory(currentResponse);
+        }
+
+        if (this.currentQuestionIndex < this.questions.length - 1) {
+            this.currentQuestionIndex++;
+            this.lastResponseTime = Date.now();
+        }
+        
+        return this.getCurrentQuestion();
+    }
+
+    resetQuestions() {
+        this.currentQuestionIndex = 0;
+        this.transcriptHistory = [];
+        this.lastResponseTime = 0;
+    }
+
+    addToTranscriptHistory(response) {
+        const currentQuestion = this.getCurrentQuestion();
+        if (!this.transcriptHistory.some(item => 
+            item.question === currentQuestion.question && 
+            item.response === response.trim()
+        )) {
+            this.transcriptHistory.push({
+                question: currentQuestion.question,
+                response: response.trim(),
+                category: currentQuestion.category,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+
+    getFormattedTranscript() {
+        return this.transcriptHistory
+            .map(item => `Q: ${item.question}\nA: ${item.response}`)
+            .join('\n\n');
+    }
+
+    async analyzeInterview(transcript) {
+        try {
+            console.log('Analyzing transcript:', transcript);
+            if (!transcript || transcript.trim().length === 0) {
+                throw new Error('No transcript provided for analysis');
+            }
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4",
+                    messages: [{
+                        role: 'system',
+                        content: `You are an expert interview assessor. Analyze this interview transcript for a job interview. 
+                        Evaluate the candidate's responses and provide structured insights about their performance.
+                        Parse the responses carefully and assess:
+                        - Level of engagement and interest
+                        - Quality and depth of answers
+                        - Communication style and clarity
+                        - Professional attitude
+                        - Technical competency signals
+                        
+                        Return your analysis in this exact JSON format:
+                        {
+                            "key_traits": {
+                                "confidence": <number between 0 and 1>,
+                                "clarity": <number between 0 and 1>,
+                                "technical_knowledge": <number between 0 and 1>,
+                                "communication": <number between 0 and 1>,
+                                "leadership": <number between 0 and 1>
+                            },
+                            "behavioral_flags": [
+                                <list of observed behaviors>,
+                                <minimum 3 specific observations>
+                            ],
+                            "risk_factors": [
+                                <list of concerns>,
+                                <minimum 2 specific risks>
+                            ],
+                            "recommendations": [
+                                <list of actionable recommendations>,
+                                <minimum 3 specific recommendations>
+                            ]
+                        }
+                        
+                        Score traits based on evidence in responses. Be specific in your observations.`
+                    }, {
+                        role: 'user',
+                        content: transcript
+                    }],
+                    temperature: 0.4,
+                    max_tokens: 1000
+                })
+            });
+
+            if (!response.ok) {
+                console.error('API Response not OK:', response.status);
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Raw OpenAI Response:', data);
+
+            if (!data.choices?.[0]?.message?.content) {
+                throw new Error('Invalid API response structure');
+            }
+
+            let analysis;
+            try {
+                analysis = JSON.parse(data.choices[0].message.content);
+                
+                if (!this.validateAnalysisStructure(analysis)) {
+                    throw new Error('Invalid analysis structure');
+                }
+            } catch (parseError) {
+                console.error('Parse error:', parseError);
+                throw new Error('Failed to parse analysis response');
+            }
+
+            if (this.detectDisinterest(transcript)) {
+                analysis.behavioral_flags.unshift('Shows significant disinterest');
+                analysis.risk_factors.unshift('Candidate appears uncommitted to the process');
+                analysis.key_traits.confidence = Math.min(analysis.key_traits.confidence, 0.3);
+            }
+
+            if (this.detectNegativeAttitude(transcript)) {
+                analysis.behavioral_flags.unshift('Displays negative attitude');
+                analysis.risk_factors.unshift('Potential cultural fit concerns');
+                analysis.key_traits.communication = Math.min(analysis.key_traits.communication, 0.3);
+            }
+
+            return analysis;
+
+        } catch (error) {
+            console.error('Analysis error:', error);
+            return this.generateResponseBasedAnalysis(transcript);
+        }
+    }
+
+    validateAnalysisStructure(analysis) {
+        return (
+            analysis &&
+            analysis.key_traits &&
+            typeof analysis.key_traits.confidence === 'number' &&
+            typeof analysis.key_traits.clarity === 'number' &&
+            typeof analysis.key_traits.technical_knowledge === 'number' &&
+            typeof analysis.key_traits.communication === 'number' &&
+            typeof analysis.key_traits.leadership === 'number' &&
+            Array.isArray(analysis.behavioral_flags) &&
+            Array.isArray(analysis.risk_factors) &&
+            Array.isArray(analysis.recommendations)
+        );
+    }
+
+    detectDisinterest(transcript) {
+        const disinterestPatterns = [
+            /don't (want|care|like)/i,
+            /not interested/i,
+            /this is ridiculous/i,
+            /no[t]? (going|doing)/i
+        ];
+        return disinterestPatterns.some(pattern => pattern.test(transcript));
+    }
+
+    detectNegativeAttitude(transcript) {
+        const negativePatterns = [
+            /ridiculous/i,
+            /stupid/i,
+            /waste/i,
+            /don't want to/i,
+            /no[t]? (going|doing)/i
+        ];
+        return negativePatterns.some(pattern => pattern.test(transcript));
+    }
+
+    generateResponseBasedAnalysis(transcript) {
+        const responseLines = transcript.split('\n');
+        const hasResponses = responseLines.length > 0;
+        
+        const shortResponses = responseLines.filter(line => 
+            line.includes('A:') && line.split('A:')[1].trim().split(' ').length < 5
+        ).length;
+        
+        const negativeResponses = responseLines.filter(line =>
+            line.includes('A:') && (
+                line.toLowerCase().includes('no') ||
+                line.toLowerCase().includes('don\'t') ||
+                line.toLowerCase().includes('not')
+            )
+        ).length;
+
+        const responseRatio = hasResponses ? negativeResponses / responseLines.length : 0;
+        const engagementScore = Math.max(0.1, 1 - (shortResponses / responseLines.length));
+        
+        return {
+            key_traits: {
+                confidence: Math.max(0.1, 0.5 - (responseRatio * 0.3)),
+                clarity: Math.max(0.1, engagementScore),
+                technical_knowledge: this.detectTechnicalContent(transcript) ? 0.6 : 0.3,
+                communication: Math.max(0.1, engagementScore - (responseRatio * 0.4)),
+                leadership: Math.max(0.1, 0.4 - (responseRatio * 0.2))
+            },
+            behavioral_flags: [
+                negativeResponses > 2 ? 'Shows resistance to questions' : 'Limited engagement',
+                shortResponses > 2 ? 'Provides minimal responses' : 'Responses lack detail',
+                'Interview engagement below expectations'
+            ],
+            risk_factors: [
+                responseRatio > 0.3 ? 'High proportion of negative responses' : 'Limited response quality',
+                'Candidate may not be fully interested in the position'
+            ],
+            recommendations: [
+                'Consider conducting a follow-up interview with different format',
+                'Probe for specific examples of past experience',
+                'Assess candidate motivation and interest level'
+            ]
+        };
+    }
+
+    detectTechnicalContent(transcript) {
+        const technicalWords = [
+            'code', 'programming', 'software', 'development', 'technical',
+            'engineer', 'system', 'database', 'algorithm', 'analysis'
+        ];
+        const technicalPattern = new RegExp(technicalWords.join('|'), 'i');
+        return technicalPattern.test(transcript);
+    }
+
+    async generateFollowUpQuestions(transcript) {
+        try {
+            if (!transcript || transcript.trim().length === 0) {
+                throw new Error('No transcript provided for follow-up questions');
+            }
+
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4",
+                    messages: [{
+                        role: 'system',
+                        content: `Based on this interview transcript, generate exactly 3 thoughtful follow-up questions.
+                        Consider:
+                        - Areas that need clarification
+                        - Topics that could benefit from more detail
+                        - Potential concerns that should be addressed
+                        
+                        Format: Return exactly 3 questions, one per line, starting with a dash (-).`
+                    }, {
+                        role: 'user',
+                        content: transcript
+                    }],
+                    temperature: 0.7,
+                    max_tokens: 250
+                })
+            });
+
+            const data = await response.json();
+            console.log('Follow-up questions raw response:', data);
+
+            if (!data.choices?.[0]?.message?.content) {
+                throw new Error('Invalid questions response');
+            }
+
+            const questions = data.choices[0].message.content
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.startsWith('-'))
+                .map(line => line.substring(1).trim())
+                .filter(q => q.length > 0);
+
+            return questions.length >= 3 ? questions.slice(0, 3) : this.generateContextBasedQuestions(transcript);
+
+        } catch (error) {
+            console.error('Follow-up questions error:', error);
+            return this.generateContextBasedQuestions(transcript);
+        }
+    }
+
+    generateContextBasedQuestions(transcript) {
+        const lowEngagement = this.detectDisinterest(transcript);
+        const negativeAttitude = this.detectNegativeAttitude(transcript);
+
+        if (lowEngagement) {
+            return [
+                'What aspects of this role would you find most interesting or challenging?',
+                'Could you help us understand what type of position you are looking for?',
+                'What would make this opportunity more appealing to you?'
+            ];
+        }
+
+        if (negativeAttitude) {
+            return [
+                'What concerns do you have about this position that we could address?',
+                'How could we make this interview process more comfortable for you?',
+                'What would you like to know more about regarding this opportunity?'
+            ];
+        }
+
+        return [
+            'Could you share more specific examples from your experience?',
+            'How do you see yourself contributing to our team?',
+            'What questions do you have about our company and culture?'
+        ];
+    }
+}
+
+// Initialize and make globally available
+window.OpenAIService = new OpenAIService();
+}
+
+filepath:///src\js\services\videoAnalysisService.js /// /// ///
+file code{
+// src/js/services/videoAnalysisService.js
+import * as faceapi from 'face-api.js';
+
+class VideoAnalysisService {
+    constructor() {
+        this.isModelLoaded = false;
+        this.analysisData = {
+            expressions: [],
+            headPose: [],
+            eyeMovements: [],
+            suspiciousActivities: []
+        };
+    }
+
+    async loadModels() {
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+            ]);
+            this.isModelLoaded = true;
+            console.log('Face analysis models loaded successfully');
+        } catch (error) {
+            console.error('Error loading face analysis models:', error);
+            throw new Error('Failed to load face analysis models');
+        }
+    }
+
+    async analyzeFacialBehavior(videoElement, onFrame) {
+        if (!this.isModelLoaded) {
+            throw new Error('Face analysis models not loaded');
+        }
+
+        const analysis = {
+            lookAway: 0,
+            suspiciousMovements: 0,
+            expressionChanges: 0,
+            totalFrames: 0
+        };
+
+        const processFrame = async () => {
+            const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceExpressions();
+
+            if (detections && detections.length > 0) {
+                const detection = detections[0];
+                
+                // Analyze eye movements and head position
+                const landmarks = detection.landmarks;
+                const leftEye = landmarks.getLeftEye();
+                const rightEye = landmarks.getRightEye();
+                
+                // Check for looking away
+                if (this.isLookingAway(leftEye, rightEye)) {
+                    analysis.lookAway++;
+                }
+
+                // Analyze expressions
+                const expressions = detection.expressions;
+                this.analysisData.expressions.push(expressions);
+
+                // Check for suspicious rapid expression changes
+                if (this.hasRapidExpressionChange(expressions)) {
+                    analysis.expressionChanges++;
+                }
+
+                // Check for suspicious head movements
+                if (this.hasSuspiciousHeadMovement(landmarks)) {
+                    analysis.suspiciousMovements++;
+                }
+            }
+
+            analysis.totalFrames++;
+            
+            if (onFrame) {
+                onFrame(analysis);
+            }
+        };
+
+        return analysis;
+    }
+
+    isLookingAway(leftEye, rightEye) {
+        // Calculate eye position relative to face center
+        const eyeCenter = {
+            x: (leftEye[0].x + rightEye[3].x) / 2,
+            y: (leftEye[0].y + rightEye[3].y) / 2
+        };
+        
+        // Define threshold for looking away
+        const threshold = 0.2;
+        return Math.abs(eyeCenter.x) > threshold || Math.abs(eyeCenter.y) > threshold;
+    }
+
+    hasRapidExpressionChange(expressions) {
+        if (this.analysisData.expressions.length < 2) return false;
+        
+        const previousExpressions = this.analysisData.expressions[this.analysisData.expressions.length - 2];
+        const expressionThreshold = 0.3;
+
+        return Object.keys(expressions).some(expression => 
+            Math.abs(expressions[expression] - previousExpressions[expression]) > expressionThreshold
+        );
+    }
+
+    hasSuspiciousHeadMovement(landmarks) {
+        const nose = landmarks.getNose();
+        const movement = this.calculateMovement(nose[0]);
+        const threshold = 20; // pixels
+        return movement > threshold;
+    }
+
+    calculateMovement(point) {
+        if (this.lastPoint) {
+            const movement = Math.sqrt(
+                Math.pow(point.x - this.lastPoint.x, 2) + 
+                Math.pow(point.y - this.lastPoint.y, 2)
+            );
+            this.lastPoint = point;
+            return movement;
+        }
+        this.lastPoint = point;
+        return 0;
+    }
+
+    generateAnalysisReport(analysis) {
+        const suspicionScore = this.calculateSuspicionScore(analysis);
+        
+        return {
+            suspicionScore,
+            details: {
+                lookAwayPercentage: (analysis.lookAway / analysis.totalFrames) * 100,
+                suspiciousMovementsCount: analysis.suspiciousMovements,
+                rapidExpressionChanges: analysis.expressionChanges
+            },
+            flags: this.generateWarningFlags(analysis),
+            recommendations: this.generateRecommendations(analysis)
+        };
+    }
+
+    calculateSuspicionScore(analysis) {
+        const weights = {
+            lookAway: 0.4,
+            suspiciousMovements: 0.3,
+            expressionChanges: 0.3
+        };
+
+        const normalizedScore = 
+            (weights.lookAway * (analysis.lookAway / analysis.totalFrames)) +
+            (weights.suspiciousMovements * (analysis.suspiciousMovements / analysis.totalFrames)) +
+            (weights.expressionChanges * (analysis.expressionChanges / analysis.totalFrames));
+
+        return Math.min(Math.round(normalizedScore * 100), 100);
+    }
+
+    generateWarningFlags(analysis) {
+        const flags = [];
+        const thresholds = {
+            lookAwayPercent: 30,
+            suspiciousMovementsPercent: 20,
+            expressionChangesPercent: 25
+        };
+
+        const lookAwayPercent = (analysis.lookAway / analysis.totalFrames) * 100;
+        const suspiciousMovementsPercent = (analysis.suspiciousMovements / analysis.totalFrames) * 100;
+        const expressionChangesPercent = (analysis.expressionChanges / analysis.totalFrames) * 100;
+
+        if (lookAwayPercent > thresholds.lookAwayPercent) {
+            flags.push('Frequent looking away from camera');
+        }
+        if (suspiciousMovementsPercent > thresholds.suspiciousMovementsPercent) {
+            flags.push('Unusual head movements detected');
+        }
+        if (expressionChangesPercent > thresholds.expressionChangesPercent) {
+            flags.push('Irregular expression patterns detected');
+        }
+
+        return flags;
+    }
+
+    generateRecommendations(analysis) {
+        const recommendations = [];
+        const lookAwayPercent = (analysis.lookAway / analysis.totalFrames) * 100;
+
+        if (lookAwayPercent > 30) {
+            recommendations.push('Consider conducting a follow-up in-person interview');
+        }
+        if (analysis.suspiciousMovements > 10) {
+            recommendations.push('Review the recorded session carefully for suspicious activities');
+        }
+        if (analysis.expressionChanges > 15) {
+            recommendations.push('Evaluate candidate responses against their facial expressions');
+        }
+
+        return recommendations;
+    }
+}
+
+export default VideoAnalysisService;
+}
+
+filepath:///src\js\services\voiceAnalysisService.js /// /// ///
+file code{
+// src/js/services/voiceAnalysisService.js
+class VoiceAnalysisService {
+    constructor() {
+        this.audioContext = null;
+        this.analyzer = null;
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.isRecording = false;
+        this.transcript = '';
+        this.onTranscriptUpdate = null;
+    }
+
+    async initialize() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyzer = this.audioContext.createAnalyser();
+            this.analyzer.fftSize = 2048;
+
+            if (!('webkitSpeechRecognition' in window)) {
+                throw new Error('Speech recognition not supported in this browser');
+            }
+
+            this.recognition = new webkitSpeechRecognition();
+            this.setupSpeechRecognition();
+            return true;
+        } catch (error) {
+            console.error('Voice analysis initialization error:', error);
+            throw error;
+        }
+    }
+
+    setupSpeechRecognition() {
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                    this.transcript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            if (this.onTranscriptUpdate) {
+                this.onTranscriptUpdate({
+                    final: this.transcript,
+                    interim: interimTranscript,
+                    analysis: this.analyzeVoiceMetrics()
+                });
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        this.recognition.onend = () => {
+            if (this.isRecording) {
+                this.recognition.start();
+            }
+        };
+    }
+
+    async startRecording(stream) {
+        if (!this.audioContext) {
+            await this.initialize();
+        }
+
+        const audioTrack = stream.getAudioTracks()[0];
+        const source = this.audioContext.createMediaStreamSource(new MediaStream([audioTrack]));
+        source.connect(this.analyzer);
+
+        this.mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm',
+            audioBitsPerSecond: 128000
+        });
+
+        this.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                this.recordedChunks.push(event.data);
+            }
+        };
+
+        this.mediaRecorder.start(1000);
+        this.recognition.start();
+        this.isRecording = true;
+
+        this.startVolumeMonitoring();
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+        this.recognition.stop();
+        this.isRecording = false;
+
+        const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+        this.recordedChunks = [];
+        return {
+            audio: audioBlob,
+            transcript: this.transcript,
+            analysis: this.analyzeVoiceMetrics()
+        };
+    }
+
+    startVolumeMonitoring() {
+        const bufferLength = this.analyzer.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+
+        const updateVolume = () => {
+            if (!this.isRecording) return;
+
+            this.analyzer.getFloatTimeDomainData(dataArray);
+            const volume = this.calculateVolume(dataArray);
+            const noiseLevel = this.calculateNoiseLevel(dataArray);
+            const clarity = this.calculateClarity(dataArray);
+
+            if (this.onVolumeUpdate) {
+                this.onVolumeUpdate({
+                    volume,
+                    noiseLevel,
+                    clarity
+                });
+            }
+
+            requestAnimationFrame(updateVolume);
+        };
+
+        updateVolume();
+    }
+
+    calculateVolume(dataArray) {
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += Math.abs(dataArray[i]);
+        }
+        return (sum / dataArray.length) * 100;
+    }
+
+    calculateNoiseLevel(dataArray) {
+        let sum = 0;
+        let sumSquares = 0;
+
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+            sumSquares += dataArray[i] * dataArray[i];
+        }
+
+        const mean = sum / dataArray.length;
+        const variance = (sumSquares / dataArray.length) - (mean * mean);
+        return Math.sqrt(variance) * 100;
+    }
+
+    calculateClarity(dataArray) {
+        const frequencies = new Float32Array(this.analyzer.frequencyBinCount);
+        this.analyzer.getFloatFrequencyData(frequencies);
+        
+        let signalPower = 0;
+        let noisePower = 0;
+        
+        frequencies.forEach((frequency, i) => {
+            const power = Math.pow(10, frequency / 10);
+            if (i < frequencies.length * 0.1 || i > frequencies.length * 0.9) {
+                noisePower += power;
+            } else {
+                signalPower += power;
+            }
+        });
+        
+        return (signalPower / (noisePower + 1)) * 100;
+    }
+
+    analyzeVoiceMetrics() {
+        return {
+            duration: this.getDuration(),
+            speakingPace: this.calculateSpeakingPace(),
+            clarity: this.getAverageClarity(),
+            confidence: this.calculateConfidence()
+        };
+    }
+
+    getDuration() {
+        return this.mediaRecorder ? this.mediaRecorder.time : 0;
+    }
+
+    calculateSpeakingPace() {
+        const words = this.transcript.trim().split(/\s+/).length;
+        const minutes = this.getDuration() / 60000;
+        return words / Math.max(minutes, 1);
+    }
+
+    // src/js/services/voiceAnalysisService.js (continued from previous code)
+    getAverageClarity() {
+        const bufferLength = this.analyzer.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+        this.analyzer.getFloatTimeDomainData(dataArray);
+        return this.calculateClarity(dataArray);
+    }
+
+    calculateConfidence() {
+        if (!this.transcript) return 0;
+
+        // Calculate confidence based on multiple factors
+        const metrics = {
+            volumeScore: this.getVolumeScore(),
+            paceScore: this.getPaceScore(),
+            clarityScore: this.getAverageClarity() / 100,
+            fillerWordsScore: this.getFillerWordsScore(),
+            pausePatternScore: this.getPausePatternScore()
+        };
+
+        // Weighted average of all metrics
+        const weights = {
+            volumeScore: 0.2,
+            paceScore: 0.2,
+            clarityScore: 0.3,
+            fillerWordsScore: 0.15,
+            pausePatternScore: 0.15
+        };
+
+        return Object.entries(metrics).reduce((total, [key, value]) => {
+            return total + (value * weights[key]);
+        }, 0);
+    }
+
+    getVolumeScore() {
+        const bufferLength = this.analyzer.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+        this.analyzer.getFloatTimeDomainData(dataArray);
+        const volume = this.calculateVolume(dataArray);
+        
+        // Normalize volume score (optimal range: 40-80)
+        if (volume < 20) return volume / 20;
+        if (volume > 90) return 1 - ((volume - 90) / 10);
+        if (volume >= 40 && volume <= 80) return 1;
+        return 0.7;
+    }
+
+    getPaceScore() {
+        const wordsPerMinute = this.calculateSpeakingPace();
+        // Optimal speaking pace: 120-160 words per minute
+        if (wordsPerMinute < 80) return 0.5;
+        if (wordsPerMinute > 200) return 0.6;
+        if (wordsPerMinute >= 120 && wordsPerMinute <= 160) return 1;
+        return 0.8;
+    }
+
+    getFillerWordsScore() {
+        const fillerWords = ['um', 'uh', 'like', 'you know', 'sort of', 'kind of'];
+        const words = this.transcript.toLowerCase().split(/\s+/);
+        const fillerCount = words.filter(word => fillerWords.includes(word)).length;
+        const fillerRatio = fillerCount / words.length;
+        return Math.max(0, 1 - (fillerRatio * 10));
+    }
+
+    getPausePatternScore() {
+        const text = this.transcript;
+        const sentences = text.split(/[.!?]+/).filter(Boolean);
+        if (sentences.length < 2) return 0.5;
+
+        // Analyze pause patterns using punctuation and sentence length
+        let score = 0;
+        let previousLength = 0;
+
+        for (const sentence of sentences) {
+            const words = sentence.trim().split(/\s+/).length;
+            
+            // Good variation in sentence length
+            if (previousLength > 0) {
+                const variation = Math.abs(words - previousLength) / Math.max(words, previousLength);
+                score += variation <= 0.5 ? 0.5 : 0.3;
+            }
+
+            // Natural sentence length (5-15 words is optimal)
+            score += (words >= 5 && words <= 15) ? 0.5 : 0.3;
+
+            previousLength = words;
+        }
+
+        return score / sentences.length;
+    }
+
+    setTranscriptUpdateCallback(callback) {
+        this.onTranscriptUpdate = callback;
+    }
+
+    setVolumeUpdateCallback(callback) {
+        this.onVolumeUpdate = callback;
+    }
+
+    reset() {
+        this.transcript = '';
+        this.recordedChunks = [];
+        if (this.mediaRecorder) {
+            this.mediaRecorder.stop();
+        }
+        if (this.recognition) {
+            this.recognition.stop();
+        }
+        this.isRecording = false;
+    }
+
+    async getAudioBlob() {
+        if (this.recordedChunks.length === 0) {
+            return null;
+        }
+        return new Blob(this.recordedChunks, { type: 'audio/webm' });
+    }
+
+    async exportTranscript() {
+        if (!this.transcript) {
+            throw new Error('No transcript available');
+        }
+
+        const analysis = this.analyzeVoiceMetrics();
+        const exportData = {
+            transcript: this.transcript,
+            metrics: {
+                duration: analysis.duration,
+                wordsPerMinute: analysis.speakingPace,
+                clarity: analysis.clarity,
+                confidence: analysis.confidence
+            },
+            timestamp: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        return blob;
+    }
+}
+
+window.VoiceAnalysisService = new VoiceAnalysisService();
+}
+
+filepath:///src\server\server.js /// /// ///
+file code{
+// src/server/server.js
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const path = require('path');
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../../')));
+
+// Serve environment variables safely
+app.get('/api/config', (req, res) => {
+    res.json({
+        API_BASE_URL: process.env.API_BASE_URL,
+        features: {
+            faceRecognition: process.env.ENABLE_FACE_RECOGNITION === 'true',
+            speechAnalysis: process.env.ENABLE_SPEECH_ANALYSIS === 'true',
+            nlpAnalysis: process.env.ENABLE_NLP_ANALYSIS === 'true',
+            realTimeAnalysis: process.env.ENABLE_REALTIME_ANALYSIS === 'true'
+        },
+        interview: {
+            maxDuration: parseInt(process.env.MAX_DURATION) || 3600,
+            defaultTimeLimit: parseInt(process.env.DEFAULT_TIME_LIMIT) || 1800
+        }
+    });
+});
+
+// OpenAI proxy endpoint
+app.post('/api/analyze', async (req, res) => {
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(req.body)
+        });
+        
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
+}
+

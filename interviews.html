@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync Interview System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        .video-container {
+            position: relative;
+            width: 640px;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+
+        .suspicious-alert {
+            background-color: rgba(220, 53, 69, 0.9);
+            border: 2px solid #dc3545;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-warning {
+            background-color: #ffc107;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .debug-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        .debug-panel.visible {
+            display: block;
+        }
+
+        #audioMeter {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #audioMeterFill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .trait-score {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .analysis-card {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        .main-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .video-section {
+        position: sticky;
+        top: 20px;
+    }
+
+    .video-container {
+        position: relative;
+        width: 100%;
+        margin: 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .interview-section {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls-section {
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+
+    #videoElement {
+        width: 100%;
+        max-width: 640px;
+        border-radius: 8px;
+    }
+
+    @media (max-width: 1200px) {
+        .main-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .video-section {
+            position: relative;
+        }
+    }
+    </style>
+</head>
+
+<body>
+    
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-camera-video me-2"></i>
+                    TalentSync Interview Session
+                    <span id="sessionStatus" class="badge bg-secondary ms-2">Not Started</span>
+                </div>
+                <div class="timer" id="timer">00:00</div>
+            </h2>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="video-section">
+            <div class="video-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <div id="liveAnalysis" class="analysis-overlay"></div>
+            </div>
+            
+            <div class="controls-section">
+                <div class="d-flex justify-content-center gap-2">
+                    <button id="startButton" class="btn btn-primary">
+                        <i class="bi bi-play-fill"></i> Start Interview
+                    </button>
+                    <button id="stopButton" class="btn btn-danger" disabled>
+                        <i class="bi bi-stop-fill"></i> End Interview
+                    </button>
+                    <button id="downloadBtn" class="btn btn-outline-primary" disabled>
+                        <i class="bi bi-download"></i> Download Transcript
+                    </button>
+                    <button id="toggleDebug" class="btn btn-secondary">
+                        <i class="bi bi-terminal"></i> Toggle Debug Info
+                    </button>
+                </div>
+                
+                <div id="audioMeter" class="mt-3">
+                    <div id="audioMeterFill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="interview-section">
+            <div id="openaiAnalysis" class="p-3"></div>
+            <div id="debugPanel" class="debug-panel mx-3 mb-3">
+                <h5>Debug Information</h5>
+                <pre id="debugInfo"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+    <script src="src/js/services/config.js"></script>
+<script src="src/js/services/openaiService.js"></script>
+<script>
+let openaiService;
+
+document.addEventListener('DOMContentLoaded', () => {
+    openaiService = new OpenAIService();
+
+    const elements = {
+        video: document.getElementById('videoElement'),
+        startBtn: document.getElementById('startButton'),
+        stopBtn: document.getElementById('stopButton'),
+        downloadBtn: document.getElementById('downloadBtn'),
+        behaviorAnalysis: document.getElementById('behaviorAnalysis'),
+        openaiAnalysis: document.getElementById('openaiAnalysis'),
+        debugPanel: document.getElementById('debugPanel'),
+        debugInfo: document.getElementById('debugInfo'),
+        toggleDebug: document.getElementById('toggleDebug'),
+        sessionStatus: document.getElementById('sessionStatus'),
+        audioMeterFill: document.getElementById('audioMeterFill'),
+        timer: document.getElementById('timer'),
+        liveAnalysis: document.getElementById('liveAnalysis')
+    };
+
+    let state = {
+        mediaRecorder: null,
+        monitoringInterval: null,
+        videoStream: null,
+        audioContext: null,
+        audioAnalyser: null,
+        isRecording: false,
+        recognition: null,
+        transcriptText: '',
+        startTime: null,
+        intervalTimer: null,
+        behaviorData: []
+    };
+
+    function startTimer() {
+        state.startTime = new Date();
+        state.intervalTimer = setInterval(updateTimer, 1000);
+    }
+
+    function stopTimer() {
+        if (state.intervalTimer) {
+            clearInterval(state.intervalTimer);
+        }
+    }
+
+    function updateTimer() {
+        if (state.startTime) {
+            const now = new Date();
+            const diff = now - state.startTime;
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            elements.timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    class BehaviorMonitor {
+        constructor(videoElement) {
+            this.videoElement = videoElement;
+            this.canvas = document.createElement('canvas');
+            this.context = this.canvas.getContext('2d');
+            this.lastImageData = null;
+            this.suspiciousCount = 0;
+            this.outOfFrameCount = 0;
+            this.movementHistory = [];
+            this.canvas.width = 640;
+            this.canvas.height = 480;
+            this.movementThreshold = 50000;
+            this.previousFrameData = null;
+        }
+
+        analyzeFrame() {
+            try {
+                this.context.drawImage(this.videoElement, 0, 0, this.canvas.width, this.canvas.height);
+                const currentImageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
+
+                if (this.previousFrameData) {
+                    const analysis = this.detectAnomalies(currentImageData);
+                    this.updateUI(analysis);
+                }
+
+                this.previousFrameData = currentImageData;
+            } catch (error) {
+                console.error('Frame analysis failed:', error);
+            }
+        }
+
+        detectAnomalies(currentImageData) {
+            let movementScore = 0;
+            let presenceScore = 0;
+
+            if (this.previousFrameData) {
+                for (let i = 0; i < currentImageData.length; i += 16) {
+                    const diff = Math.abs(currentImageData[i] - this.previousFrameData[i]);
+                    movementScore += diff;
+                }
+                presenceScore = this.calculatePresenceScore(currentImageData);
+            }
+
+            this.movementHistory.push(movementScore);
+            if (this.movementHistory.length > 10) {
+                this.movementHistory.shift();
+            }
+
+            return {
+                movementScore,
+                presenceScore,
+                isHighMovement: movementScore > this.movementThreshold,
+                isAbsent: presenceScore < 30,
+                isErratic: this.detectErraticMovement()
+            };
+        }
+
+        calculatePresenceScore(imageData) {
+            let score = 0;
+            for (let i = 0; i < imageData.length; i += 16) {
+                const brightness = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+                if (brightness > 50) score++;
+            }
+            return (score / (imageData.length / 16)) * 100;
+        }
+
+        detectErraticMovement() {
+            if (this.movementHistory.length < 5) return false;
+
+            const recentAvg = this.movementHistory.slice(-3).reduce((a, b) => a + b, 0) / 3;
+            const previousAvg = this.movementHistory.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
+            
+            return Math.abs(recentAvg - previousAvg) > 30000;
+        }
+
+        updateUI(analysis) {
+            if (analysis.isHighMovement || analysis.isAbsent || analysis.isErratic) {
+                this.suspiciousCount++;
+            }
+
+            if (analysis.isAbsent) {
+                this.outOfFrameCount++;
+            }
+
+            const isSuspicious = this.suspiciousCount > 5;
+            const analysisDiv = elements.liveAnalysis;
+            
+            analysisDiv.className = `analysis-overlay ${isSuspicious ? 'suspicious-alert' : ''} visible`;
+            analysisDiv.innerHTML = `
+                <div>
+                    <p>
+                        <span class="status-indicator ${analysis.isHighMovement ? 'status-warning' : 'status-active'}"></span>
+                        Movement: ${analysis.isHighMovement ? '⚠️ High' : '✓ Normal'}
+                    </p>
+                    <p>
+                        <span class="status-indicator ${analysis.isAbsent ? 'status-error' : 'status-active'}"></span>
+                        Presence: ${analysis.isAbsent ? '⚠️ Absent' : '✓ Present'}
+                    </p>
+                    ${isSuspicious ? '<p class="text-warning">⚠️ Suspicious Activity Detected</p>' : ''}
+                </div>
+            `;
+        }
+    }
+    class SpeechRecognitionHandler {
+    constructor() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            throw new Error('Speech Recognition not supported in this browser');
+        }
+        this.recognition = new SpeechRecognition();
+        this.transcriptText = '';
+        this.currentQuestionIndex = 0;
+        this.isActive = false;
+        this.setupRecognition();
+    }
+
+    setupRecognition() {
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.maxAlternatives = 1;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onstart = () => {
+            console.log('Recognition started');
+            this.isActive = true;
+            if (elements.video) {
+                elements.video.muted = true;
+            }
+        };
+
+        this.recognition.onend = () => {
+            console.log('Recognition ended');
+            if (this.isActive) {
+                try {
+                    setTimeout(() => this.recognition.start(), 50);
+                } catch (e) {
+                    console.error('Failed to restart recognition:', e);
+                }
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Recognition error:', event.error);
+            if (event.error !== 'no-speech' && this.isActive) {
+                this.isActive = false;
+            }
+        };
+
+        // Add the onresult handler here
+        this.recognition.onresult = this.onresult.bind(this);
+    }
+
+    onresult(event) {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+                this.transcriptText += transcript + ' ';
+                
+                // Check if response is complete enough to move to next question
+                const nextQuestion = openaiService.nextQuestion(this.transcriptText);
+                if (nextQuestion.index !== this.currentQuestionIndex) {
+                    this.currentQuestionIndex = nextQuestion.index;
+                    this.transcriptText = ''; // Clear for next response
+                }
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+
+        this.updateDisplay(interimTranscript);
+    }
+
+    updateDisplay(interim = '') {
+        const currentQ = openaiService.getCurrentQuestion();
+        const transcriptHistory = openaiService.transcriptHistory
+            .map(item => `
+                <div class="qa-pair mb-3 p-2 border-bottom">
+                    <div class="question">
+                        <span class="badge bg-primary me-2">${item.category}</span>
+                        <strong>Q:</strong> ${item.question}
+                    </div>
+                    <div class="answer ms-3 mt-1">
+                        <strong>A:</strong> ${item.response}
+                    </div>
+                </div>
+            `)
+            .join('');
+
+        elements.openaiAnalysis.innerHTML = `
+            <div class="alert alert-success">
+                <h5>Interview Progress</h5>
+                <div class="current-question mb-3 p-3 bg-light border-start border-4 border-primary">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-primary mb-0">Question ${currentQ.index} of ${currentQ.total}</h6>
+                        <span class="badge bg-primary">${currentQ.category}</span>
+                    </div>
+                    <p class="fs-5 mb-0">${currentQ.question}</p>
+                </div>
+                
+                <div class="transcript mt-4">
+                    ${transcriptHistory}
+                    
+                    <div class="current-response">
+                        <div class="question">
+                            <span class="badge bg-success me-2">Current</span>
+                            <strong>Q:</strong> ${currentQ.question}
+                        </div>
+                        <div class="answer ms-3 mt-1">
+                            <strong>A:</strong> ${this.transcriptText}
+                            ${interim ? `<span class="text-muted"><em>${interim}</em></span>` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <small class="text-muted d-flex align-items-center">
+                        <span class="badge ${this.isActive ? 'bg-success' : 'bg-secondary'} me-2">
+                            ${this.isActive ? 'Listening' : 'Paused'}
+                        </span>
+                        Last updated: ${new Date().toLocaleTimeString()}
+                    </small>
+                </div>
+            </div>
+        `;
+    }
+
+    start() {
+        this.isActive = true;
+        this.transcriptText = '';
+        
+        if (elements.video) {
+            elements.video.muted = true;
+        }
+        
+        try {
+            this.recognition.start();
+        } catch (e) {
+            console.error('Recognition start error:', e);
+            this.isActive = false;
+            throw e;
+        }
+    }
+
+    stop() {
+        this.isActive = false;
+        if (this.recognition) {
+            try {
+                this.recognition.stop();
+            } catch (e) {
+                console.error('Recognition stop error:', e);
+            }
+        }
+    }
+}// Add this CSS to your stylesheet
+const style = document.createElement('style');
+style.textContent = `
+    .pulse-animation {
+        animation: pulse 1s ease-in-out;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .current-question {
+        transition: all 0.3s ease-in-out;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: rgba(13, 110, 253, 0.05);
+        border-left: 4px solid #0d6efd;
+    }
+`;
+document.head.appendChild(style);
+    function generateAnalysisHTML(transcript, analysis) {
+        return `
+            <div class="alert alert-success">
+                <h5>Interview Analysis</h5>
+                <div class="card analysis-card mb-3">
+                    <div class="card-body">
+                        <h6>Interview Transcript:</h6>
+                        <p class="text-muted">${transcript}</p>
+                    </div>
+                </div>
+                <div class="card analysis-card mb-3">
+                    <div class="card-body">
+                        <h6>AI Analysis Results</h6>
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Key Traits Assessment:</h6>
+                                <ul class="list-unstyled">
+                                    ${Object.entries(analysis.key_traits).map(([trait, score]) => `
+                                        <li class="mb-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span>${trait.replace('_', ' ').toUpperCase()}</span>
+                                                <span class="trait-score">${Math.round(score * 100)}%</span>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                    style="width: ${score * 100}%" 
+                                                    aria-valuenow="${score * 100}" 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Behavioral Indicators:</h6>
+                                <div class="flags-container">
+                                    ${analysis.behavioral_flags.map(flag => `
+                                        <div class="flag-item">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                            ${flag}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h6 class="text-primary">Recommendations:</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-group">
+                                        ${analysis.recommendations.map(rec => `
+                                            <li class="list-group-item">
+                                                <i class="bi bi-arrow-right-circle text-primary me-2"></i>
+                                                ${rec}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-warning">Points to Verify:</h6>
+                                    <ul class="list-group">
+                                        ${analysis.risk_factors.map(risk => `
+                                            <li class="list-group-item">
+                                                <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                                ${risk}
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <h6 class="text-primary">Suggested Follow-up Questions:</h6>
+                                <ul class="list-group">
+                                    ${analysis.followUpQuestions.map(question => `
+                                        <li class="list-group-item">
+                                            <i class="bi bi-question-circle text-primary me-2"></i>
+                                            ${question}
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <small class="text-muted">Analysis completed at ${new Date().toLocaleTimeString()}</small>
+                </div>
+            </div>
+        `;
+    }
+
+    async function startInterview() {
+    try {
+        elements.sessionStatus.textContent = 'Initializing...';
+        elements.sessionStatus.className = 'badge bg-info';
+
+        startTimer();
+
+        // Get media stream with specific constraints
+        state.videoStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                frameRate: { ideal: 30 }
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: false
+            }
+        });
+
+        // Set up video with muted audio
+        elements.video.srcObject = state.videoStream;
+        elements.video.muted = true;  // Prevent echo
+
+        const monitor = new BehaviorMonitor(elements.video);
+        state.monitoringInterval = setInterval(() => monitor.analyzeFrame(), 1000);
+
+        state.recognition = new SpeechRecognitionHandler();
+        state.recognition.start();
+
+        state.isRecording = true;
+        elements.startBtn.disabled = true;
+        elements.stopBtn.disabled = false;
+        elements.downloadBtn.disabled = true;
+        elements.sessionStatus.textContent = 'Recording';
+        elements.sessionStatus.className = 'badge bg-success';
+    } catch (error) {
+        console.error('Start interview error:', error);
+        elements.sessionStatus.textContent = 'Error';
+        elements.sessionStatus.className = 'badge bg-danger';
+        alert('Failed to start interview. Please ensure camera and microphone permissions are granted.');
+    }
+}
+async function stopInterview() {
+    try {
+        state.isRecording = false;
+        stopTimer();
+
+        if (state.recognition) {
+            state.recognition.stop();
+        }
+
+        if (state.videoStream) {
+            state.videoStream.getTracks().forEach(track => track.stop());
+        }
+
+        clearInterval(state.monitoringInterval);
+        elements.video.srcObject = null;
+        elements.startBtn.disabled = false;
+        elements.stopBtn.disabled = true;
+        elements.downloadBtn.disabled = false;
+
+        elements.liveAnalysis.className = 'analysis-overlay';
+        elements.liveAnalysis.innerHTML = '';
+
+        // Get full transcript from OpenAI service history
+        const fullTranscript = openaiService.getFormattedTranscript();
+        
+        if (!fullTranscript || fullTranscript.trim().length === 0) {
+            elements.openaiAnalysis.innerHTML = `
+                <div class="alert alert-warning">
+                    <h5>No Interview Content</h5>
+                    <p>No interview responses were recorded. Please try again.</p>
+                </div>
+            `;
+            return;
+        }
+
+        elements.openaiAnalysis.innerHTML = `
+            <div class="alert alert-info">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                Analyzing interview...
+            </div>
+        `;
+
+        try {
+            const [analysis, followUpQuestions] = await Promise.all([
+                openaiService.analyzeInterview(fullTranscript),
+                openaiService.generateFollowUpQuestions(fullTranscript)
+            ]);
+
+            const fullAnalysis = {
+                ...analysis,
+                followUpQuestions
+            };
+
+            elements.openaiAnalysis.innerHTML = generateAnalysisHTML(fullTranscript, fullAnalysis);
+            elements.downloadBtn.disabled = false;
+        } catch (error) {
+            console.error('Analysis error:', error);
+            elements.openaiAnalysis.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Analysis Failed</h5>
+                    <p>There was an error analyzing the interview. Please try again later.</p>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        }
+
+        state.transcriptText = fullTranscript;
+        elements.sessionStatus.textContent = 'Completed';
+        elements.sessionStatus.className = 'badge bg-success';
+
+    } catch (error) {
+        console.error('Stop interview error:', error);
+        elements.sessionStatus.textContent = 'Error';
+        elements.sessionStatus.className = 'badge bg-danger';
+    }
+}
+    function downloadTranscript() {
+        if (state.transcriptText) {
+            const date = new Date().toISOString().slice(0, 10);
+            const time = new Date().toTimeString().slice(0, 8).replace(/:/g, '-');
+            const filename = `interview-transcript-${date}-${time}.txt`;
+
+            const blob = new Blob([state.transcriptText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    }
+
+    elements.startBtn.addEventListener('click', startInterview);
+    elements.stopBtn.addEventListener('click', stopInterview);
+    elements.downloadBtn.addEventListener('click', downloadTranscript);
+    elements.toggleDebug.addEventListener('click', () => {
+        config.DEBUG_MODE = !config.DEBUG_MODE;
+        elements.debugPanel.classList.toggle('visible');
+    });
+});
+</script>
+
+</body>
+
+</html>

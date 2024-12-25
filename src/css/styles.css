@@ -1,0 +1,35 @@
+body {
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 600px;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+#errorContainer .alert {
+    margin-bottom: 10px;
+}
+.analysis-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    /* Add these lines */
+    display: none;  /* Hide by default */
+    min-width: 200px;
+}
+
+
+.analysis-overlay.visible {
+    display: block;  /* Show when has visible class */
+}
