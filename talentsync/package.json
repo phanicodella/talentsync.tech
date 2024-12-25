@@ -4,18 +4,18 @@
   "scripts": {
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node src/server/server.js",
+    "start": "nodemon src/server/server.js",
     "dev": "nodemon src/server/server.js"
   },
   "devDependencies": {
-    "vite": "^5.0.0",
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "vite": "^5.0.0"
   },
   "dependencies": {
-    "@tensorflow/tfjs": "^4.15.0",
+    "@tensorflow/tfjs": "^4.22.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "face-api.js": "^0.22.2",
     "node-fetch": "^2.7.0"
   }

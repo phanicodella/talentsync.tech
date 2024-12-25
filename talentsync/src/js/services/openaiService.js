@@ -1,8 +1,14 @@
 // src/js/services/openaiService.js
 class OpenAIService {
-    constructor() {
+    constructor(apiKey) {
+        if (!window.config) {
+            console.error('Config not loaded');
+            return;
+        }
+        this.apiKey = apiKey || window.config.OPENAI_API_KEY;
         this.baseURL = `${window.config.API_BASE_URL}/api`;
     }
+
 
     async analyzeInterview(transcript) {
         try {
@@ -98,4 +104,6 @@ class OpenAIService {
     }
 }
 
-window.OpenAIService = new OpenAIService();
+setTimeout(() => {
+    window.OpenAIService = new OpenAIService();
+}, 0);
