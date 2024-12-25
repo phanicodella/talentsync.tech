@@ -3,20 +3,21 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const fetch = require('node-fetch'); // Ensure node-fetch is installed
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../../')));
+app.use(express.static(path.join(__dirname, '../..')));
 
 // Serve environment variables safely
-app.get('/api/config', (req, res) => {
+const config = (req, res) => {
     res.json({
         API_BASE_URL: process.env.API_BASE_URL,
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY, // Add this for frontend config
         features: {
             faceRecognition: process.env.ENABLE_FACE_RECOGNITION === 'true',
             speechAnalysis: process.env.ENABLE_SPEECH_ANALYSIS === 'true',
@@ -28,10 +29,10 @@ app.get('/api/config', (req, res) => {
             defaultTimeLimit: parseInt(process.env.DEFAULT_TIME_LIMIT) || 1800
         }
     });
-});
+};
 
 // OpenAI proxy endpoint
-app.post('/api/analyze', async (req, res) => {
+const analyze = async (req, res) => {
     try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
@@ -47,8 +48,9 @@ app.post('/api/analyze', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
+};
 
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+// Vercel serverless function exports
+module.exports = app;
+module.exports.config = config;
+module.exports.analyze = analyze;
