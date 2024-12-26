@@ -3,3 +3,8 @@ node_modules/
 dist/
 .vercel/
 cg_cat.py
+
+.vercel
+CompleteSourceCode.txt
+filtered_tree.txt
+FE_CompleteSourceCode.txt
