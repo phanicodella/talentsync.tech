@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const fetch = require('node-fetch'); // Ensure node-fetch is installed
+console.log("only for deployment");
 
 dotenv.config();
 
