@@ -1,0 +1,5283 @@
+filepath:///cg_cat.py /// /// ///
+file code{
+﻿import os
+import fnmatch
+from pathlib import Path
+
+
+def should_exclude_dir(dir_name):
+    """Check if directory should be excluded."""
+    exclude_patterns = {
+        'node_modules',
+        'venv',
+        '.git',
+        'build',
+        'dist',
+        'bin',
+        'obj',
+        '__pycache__',
+        '.vs',
+        '.idea',
+        'packages',
+        'vendor',
+        'bower_components',
+        'jspm_packages',
+        'lib',
+        'out',
+        'target',
+        'Debug',
+        'Release'
+    }
+    return any(dir_name.lower().startswith(pattern) for pattern in exclude_patterns)
+
+
+def is_source_file(filename):
+    """Check if file is a source code file and not unnecessary manifests or configs."""
+    source_patterns = [
+        '*.js', '*.jsx', '*.ts', '*.tsx',  # JavaScript/TypeScript
+        '*.py',                            # Python
+        '*.cs',                            # C#
+        '*.css', '*.scss', '*.sass',       # Stylesheets
+        '*.html', '*.htm',                 # HTML
+        '*.java',                          # Java
+        '*.cpp', '*.hpp', '*.c', '*.h',    # C/C++
+        '*.go',                            # Go
+        '*.rb',                            # Ruby
+        '*.php',                           # PHP
+        '*.swift',                         # Swift
+        '*.rs',                            # Rust
+        '*.vue', '*.svelte',               # Web frameworks
+        '*.xml', '*.json',                 # Data formats
+        '*.yaml', '*.yml'                  # Configuration files
+    ]
+    exclude_files = [
+        '*-lock.json',                     # Exclude lock files
+        '*-weights_manifest.json',         # Manifest files
+        '*.eslint*',                       # ESLint configuration
+        '*.prettier*',                     # Prettier configuration
+        '*.log', 
+        '*.lock',                           # Log files
+        'README.md',                       # Documentation
+        '*.md'                             # Other markdown files
+    ]
+    include_files = [
+        'package.json'                     # Explicitly include package.json
+    ]
+
+
+    # Match only source files and exclude unnecessary files
+    if filename in include_files:
+        return True
+    return (
+        any(fnmatch.fnmatch(filename.lower(), pattern) for pattern in source_patterns) and
+        not any(fnmatch.fnmatch(filename.lower(), exclude) for exclude in exclude_files)
+    )
+
+
+def capture_source_code(root_dir='.', output_file='CompleteSourceCode.txt'):
+    """
+    Capture all source code files from the project directory.
+
+
+    Args:
+        root_dir (str): Root directory to start scanning from
+        output_file (str): Output file path
+    """
+    root_path = Path(root_dir).absolute()
+
+
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for root, dirs, files in os.walk(root_dir):
+            # Remove excluded directories
+            dirs[:] = [d for d in dirs if not should_exclude_dir(d)]
+
+
+            for file in files:
+                if is_source_file(file):
+                    file_path = Path(root) / file
+                    try:
+                        # Use os.path.relpath for more reliable path calculation
+                        relative_path = os.path.relpath(file_path, root_path)
+
+
+                        with open(file_path, 'r', encoding='utf-8') as source_file:
+                            content = source_file.read()
+
+
+                            # Write file path and content with separator
+                            f.write(f"filepath:///{relative_path} /// /// ///\n")
+                            f.write("file code{\n")
+                            f.write(content)
+                            f.write("\n}\n\n")
+
+
+                    except Exception as e:
+                        print(f"Error processing file {file_path}: {str(e)}")
+
+
+
+
+if __name__ == "__main__":
+    try:
+        current_dir = os.getcwd()
+        capture_source_code(current_dir)
+        print("Source code capture completed successfully!")
+        print("Output saved to: CompleteSourceCode.txt")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+}
+
+filepath:///index.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Interview Scheduling</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f4f4f4; 
+            min-height: 100vh;
+        }
+        .card { 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .alert {
+            border: none;
+            border-radius: 8px;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .invalid-feedback {
+            font-size: 0.85em;
+        }
+        .required-field::after {
+            content: " *";
+            color: red;
+        }
+        #errorContainer .alert {
+            margin-bottom: 10px;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border: none;
+            padding: 10px 20px;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+    <link href="src/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h3 class="text-center mb-0">Schedule Interview</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="alertContainer"></div>
+                        <div id="errorContainer" class="mb-3" style="display: none;"></div>
+                            
+                        <form id="interviewForm" novalidate>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="candidateName" class="form-label required-field">Candidate Name</label>
+                                    <input type="text" class="form-control" id="candidateName" required>
+                                    <div class="invalid-feedback">Please enter a valid name (minimum 2 characters)</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="candidateEmail" class="form-label required-field">Candidate Email</label>
+                                    <input type="email" class="form-control" id="candidateEmail" required>
+                                    <div class="invalid-feedback">Please enter a valid email address</div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="candidatePhone" class="form-label">Candidate Phone</label>
+                                    <input type="tel" class="form-control" id="candidatePhone">
+                                    <div class="invalid-feedback">Please enter a valid phone number</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="interviewDate" class="form-label required-field">Interview Date and Time</label>
+                                    <input type="datetime-local" class="form-control" id="interviewDate" required>
+                                    <div class="invalid-feedback">Please select a future date and time</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="interviewType" class="form-label required-field">Interview Type</label>
+                                <select class="form-select" id="interviewType" required>
+                                    <option value="">Select interview type</option>
+                                    <option value="technical">Technical Interview</option>
+                                    <option value="hr">HR Interview</option>
+                                    <option value="final">Final Round</option>
+                                </select>
+                                <div class="invalid-feedback">Please select an interview type</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="notes" class="form-label">Additional Notes</label>
+                                <textarea class="form-control" id="notes" rows="3"></textarea>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-calendar-plus me-2"></i>Schedule Interview
+                                </button>
+                                <a href="interviews.html" class="btn btn-outline-secondary">
+                                    <i class="bi bi-calendar-week me-2"></i>View Scheduled Interviews
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import interviewService from './src/js/services/interviewService.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('interviewForm');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const errorContainer = document.getElementById('errorContainer');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Reset previous errors
+                errorContainer.style.display = 'none';
+                errorContainer.innerHTML = '';
+                form.classList.remove('was-validated');
+                
+                // Collect form data
+                const formData = {
+                    name: document.getElementById('candidateName').value.trim(),
+                    email: document.getElementById('candidateEmail').value.trim(),
+                    phone: document.getElementById('candidatePhone').value.trim(),
+                    date: document.getElementById('interviewDate').value,
+                    type: document.getElementById('interviewType').value,
+                    notes: document.getElementById('notes').value.trim()
+                };
+                
+                if (validateForm(formData)) {
+                    try {
+                        loadingOverlay.style.display = 'flex';
+                        await interviewService.createInterview(formData);
+                        window.location.href = 'interviews.html';
+                    } catch (error) {
+                        showError(error.message);
+                    } finally {
+                        loadingOverlay.style.display = 'none';
+                    }
+                }
+            });
+
+            function validateForm(data) {
+                const errors = [];
+                form.classList.add('was-validated');
+                
+                // Name validation
+                if (!data.name || data.name.length < 2 || !/^[a-zA-Z\s]+$/.test(data.name)) {
+                    errors.push("Please enter a valid name (at least 2 characters, letters only)");
+                }
+                
+                // Email validation
+                if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+                    errors.push("Please enter a valid email address");
+                }
+                
+                // Phone validation (optional)
+                if (data.phone && !/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im.test(data.phone)) {
+                    errors.push("Please enter a valid phone number or leave blank");
+                }
+                
+                // Date validation
+                const selectedDate = new Date(data.date);
+                if (!data.date || selectedDate <= new Date()) {
+                    errors.push("Please select a future date and time");
+                }
+                
+                // Interview type validation
+                if (!data.type) {
+                    errors.push("Please select an interview type");
+                }
+                
+                if (errors.length > 0) {
+                    showErrors(errors);
+                    return false;
+                }
+                
+                return true;
+            }
+
+            function showError(message) {
+                errorContainer.style.display = 'block';
+                errorContainer.innerHTML = `<div class="alert alert-danger">${message}</div>`;
+            }
+
+            function showErrors(errors) {
+                errorContainer.style.display = 'block';
+                errorContainer.innerHTML = errors
+                    .map(error => `<div class="alert alert-danger">${error}</div>`)
+                    .join('');
+            }
+        });
+    </script>
+</body>
+</html>
+}
+
+filepath:///interview-room.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Interview Session</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+
+        .suspicious-alert {
+            background-color: rgba(220, 53, 69, 0.9);
+            border: 2px solid #dc3545;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-warning {
+            background-color: #ffc107;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .debug-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        .debug-panel.visible {
+            display: block;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .video-section {
+            position: sticky;
+            top: 20px;
+        }
+
+        .interview-section {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-section {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 8px;
+        }
+
+        #audioMeter {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #audioMeterFill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .participants-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .participant {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .participant-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background-color: #28a745;
+        }
+
+        .status-offline {
+            background-color: #dc3545;
+        }
+
+        .waiting-room {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .waiting-content {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 1rem;
+            background: white;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .device-check {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            background: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .button-row button {
+            min-width: 120px;
+        }
+
+        .alert-float {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .alert-float.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .trait-score {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .analysis-card {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .qa-pair {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .current-question {
+            transition: all 0.3s ease-in-out;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(13, 110, 253, 0.05);
+            border-left: 4px solid #0d6efd;
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .video-section {
+                position: relative;
+            }
+
+            .participants-panel {
+                position: static;
+                margin-bottom: 1rem;
+                background: #343a40;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Waiting Room -->
+    <div class="waiting-room" id="waitingRoom">
+        <div class="waiting-content">
+            <div class="mb-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <h3>Waiting for Interviewer</h3>
+            <p class="text-muted">Please wait while the interviewer starts the session...</p>
+            <div class="device-check mt-4">
+                <h5>Device Check</h5>
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                    <div>
+                        <i class="bi bi-camera-video"></i>
+                        <span id="cameraStatus">Checking...</span>
+                    </div>
+                    <div>
+                        <i class="bi bi-mic"></i>
+                        <span id="micStatus">Checking...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Header with session info -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>
+                            <i class="bi bi-camera-video me-2"></i>
+                            Interview Session
+                            <span id="sessionStatus" class="badge bg-secondary ms-2">Not Started</span>
+                        </h2>
+                        <p class="text-muted mb-0" id="interviewInfo">Loading interview details...</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="timer h4 mb-0" id="timer">00:00</div>
+                        <small class="text-muted" id="connectionStatus">Connecting...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <!-- Video Section -->
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="videoElement" autoplay playsinline></video>
+                    <div id="liveAnalysis" class="analysis-overlay"></div>
+                    <div class="participants-panel" id="participantsPanel">
+                        <h6 class="mb-3">Participants</h6>
+                        <div id="participantsList">
+                            <!-- Participants will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls-section mt-3">
+                    <div class="d-flex justify-content-center gap-2">
+                        <button id="micToggle" class="btn btn-outline-primary">
+                            <i class="bi bi-mic"></i>
+                        </button>
+                        <button id="cameraToggle" class="btn btn-outline-primary">
+                            <i class="bi bi-camera-video"></i>
+                        </button>
+                        <button id="startButton" class="btn btn-primary" disabled>
+                            <i class="bi bi-play-fill"></i> Start Interview
+                        </button>
+                        <button id="endButton" class="btn btn-danger" disabled>
+                            <i class="bi bi-stop-fill"></i> End Interview
+                        </button>
+                        <button id="downloadBtn" class="btn btn-outline-primary" disabled>
+                            <i class="bi bi-download"></i> Download Transcript
+                        </button>
+                    </div>
+                    
+                    <div id="audioMeter" class="mt-3">
+                        <div id="audioMeterFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview Content Section -->
+            <div class="interview-section">
+                <div id="openaiAnalysis" class="p-3">
+                    <!-- OpenAI analysis will be displayed here -->
+                </div>
+                <div id="debugPanel" class="debug-panel mx-3 mb-3">
+                    <h5>Debug Information</h5>
+                    <pre id="debugInfo"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="src/js/services/config.js"></script>
+    <script src="src/js/services/openaiService.js"></script>
+    <script src="src/js/services/authService.js"></script>
+    <script type="module">
+        import { InterviewSession } from './src/js/services/interviewSession.js';
+        import authService from './src/js/services/authService.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get interview ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const interviewId = urlParams.get('id');
+            
+            if (!interviewId) {
+                window.location.href = '/interviews.html';
+                return;
+            }
+
+            // Initialize session
+            const session = new InterviewSession(interviewId);
+            await session.initialize();
+
+            // Check if user is interviewer or candidate
+            const isInterviewer = authService.isAuthenticated() && (
+                authService.hasRole('interviewer') || authService.hasRole('admin')
+            );
+            const candidateToken = sessionStorage.getItem('interviewToken');
+            
+            if (!isInterviewer && !candidateToken) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Show/hide controls based on role
+            document.getElementById('startButton').style.display = isInterviewer ? 'block' : 'none';
+            document.getElementById('downloadBtn').style.display = isInterviewer ? 'block' : 'none';
+
+            // Handle device permissions
+            try {
+                await session.checkDevicePermissions();
+                document.getElementById('cameraStatus').textContent = '✓ Camera Ready';
+                document.getElementById('micStatus').textContent = '✓ Microphone Ready';
+            } catch (error) {
+                document.getElementById('cameraStatus').textContent = '⚠️ Camera Error';
+                document.getElementById('micStatus').textContent = '⚠️ Microphone Error';
+                console.error('Device permission error:', error);
+            }
+
+            // Set up event listeners
+            document.getElementById('micToggle').addEventListener('click', () => session.toggleAudio());
+            document.getElementById('cameraToggle').addEventListener('click', () => session.toggleVideo());
+            document.getElementById('startButton').addEventListener('click', () => session.startInterview());
+            document.getElementById('endButton').addEventListener('click', () => session.endInterview());
+            document.getElementById('downloadBtn').addEventListener('click', () => session.downloadTranscript());
+
+            // Handle session events
+            session.on('stateChange', (state) => {
+                document.getElementById('sessionStatus').textContent = state;
+                if (state === 'started') {
+                    document.getElementById('waitingRoom').style.display = 'none';
+                }
+            });
+
+            session.on('participantJoined', (participant) => {
+                // Add participant to the list
+                const participantDiv = document.createElement('div');
+                participantDiv.className = 'participant';
+                participantDiv.innerHTML = `
+                    <div class="participant-status status-online"></div>
+                    <span>${participant.name} (${participant.role})</span>
+                `;
+                document.getElementById('participantsList').appendChild(participantDiv);
+            });
+
+            session.on('participantLeft', (participantId) => {
+                // Remove participant from the list
+                const element = document.querySelector(`[data-participant-id="${participantId}"]`);
+                if (element) element.remove();
+            });
+
+            // Start session initialization
+            await session.connect();
+        });
+    </script>
+</body>
+</html>
+
+}
+
+filepath:///interviews.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Interview Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,.08);
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .status-badge {
+            padding: 0.35rem 0.65rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .status-scheduled {
+            background-color: #cff4fc;
+            color: #055160;
+        }
+
+        .status-completed {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .status-ongoing {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+
+        .interview-card {
+            transition: transform 0.2s;
+        }
+
+        .interview-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .filters-section {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
+        .interview-link {
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .copy-button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .alert-float {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .alert-float.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2><i class="bi bi-calendar-check me-2"></i>Interview Dashboard</h2>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                        <i class="bi bi-plus-circle me-2"></i>Schedule Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="totalInterviews">0</div>
+                    <div class="text-muted">Total Interviews</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="completedInterviews">0</div>
+                    <div class="text-muted">Completed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="upcomingInterviews">0</div>
+                    <div class="text-muted">Upcoming</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="todayInterviews">0</div>
+                    <div class="text-muted">Today's Interviews</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="typeFilter">
+                        <option value="">All</option>
+                        <option value="technical">Technical</option>
+                        <option value="hr">HR</option>
+                        <option value="final">Final</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date Range</label>
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sort By</label>
+                    <select class="form-select" id="sortFilter">
+                        <option value="date-desc">Date (Newest)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                        <option value="name">Candidate Name</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interviews List -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="interviewsTable">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Date & Time</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Interview Link</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interviewsList">
+                            <!-- Interviews will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Interview Modal -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule New Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleForm" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Name</label>
+                            <input type="text" class="form-control" id="candidateName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Email</label>
+                            <input type="email" class="form-control" id="candidateEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Interview Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="interviewDateTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Interview Type</label>
+                            <select class="form-select" id="interviewType" required>
+                                <option value="">Select type...</option>
+                                <option value="technical">Technical</option>
+                                <option value="hr">HR</option>
+                                <option value="final">Final Round</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="interviewNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="scheduleButton">Schedule</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Interview Modal -->
+    <div class="modal fade" id="viewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Interview Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="viewModalBody">
+                    <!-- Interview details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import authService from './src/js/services/authService.js';
+        import interviewService from './src/js/services/interviewService.js';
+
+        // Check authentication
+        if (!authService.isAuthenticated()) {
+            window.location.href = '/login.html';
+        }
+
+        // Global state
+        let interviews = [];
+        let filters = {
+            status: '',
+            type: '',
+            date: '',
+            sort: 'date-desc'
+        };
+
+        // Elements
+        const elements = {
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            interviewsList: document.getElementById('interviewsList'),
+            scheduleForm: document.getElementById('scheduleForm'),
+            scheduleButton: document.getElementById('scheduleButton'),
+            scheduleModal: new bootstrap.Modal(document.getElementById('scheduleModal')),
+            viewModal: new bootstrap.Modal(document.getElementById('viewModal')),
+            statusFilter: document.getElementById('statusFilter'),
+            typeFilter: document.getElementById('typeFilter'),
+            dateFilter: document.getElementById('dateFilter'),
+            sortFilter: document.getElementById('sortFilter')
+        };
+
+        // Initialize
+        async function initialize() {
+            showLoading(true);
+            try {
+                await loadInterviews();
+                setupEventListeners();
+                updateStats();
+            } catch (error) {
+                showError('Failed to load interviews');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Load interviews
+        async function loadInterviews() {
+            const response = await interviewService.getAllInterviews();
+            interviews = response.interviews || [];
+            renderInterviews();
+        }
+
+        // Render interviews list
+        function renderInterviews() {
+            let filteredInterviews = filterInterviews(interviews);
+            
+            elements.interviewsList.innerHTML = filteredInterviews.map(interview => `
+                <tr>
+                    <td>
+                        <div class="fw-bold">${interview.candidateName}</div>
+                        <div class="text-muted small">${interview.candidateEmail}</div>
+                    </td>
+                    <td>${formatDateTime(interview.interviewDate)}</td>
+                    <td><span class="badge bg-secondary">${formatType(interview.interviewType)}</span></td>
+                    <td><span class="status-badge status-${interview.status.toLowerCase()}">${formatStatus(interview.status)}</span></td>
+                    <td>
+                        <div class="interview-link">
+                            ${getInterviewLink(interview._id)}
+                            <button class="btn btn-sm btn-outline-primary copy-button" onclick="copyInterviewLink('${interview._id}')">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="action-buttons">
+                        ${generateActionButtons(interview)}
+                    </td>
+                </tr>
+            `).join('');
+
+            updateStats();
+        }
+
+        // Filter interviews
+        function filterInterviews(interviews) {
+            return interviews.filter(interview => {
+                if (filters.status && interview.status !== filters.status) return false;
+                if (filters.type && interview.interviewType !== filters.type) return false;
+                if (filters.date) {
+                    const interviewDate = new Date(interview.interviewDate).toLocaleDateString();
+                    const filterDate = new Date(filters.date).toLocaleDateString();
+                    if (interviewDate !== filterDate) return false;
+                }
+                return true;
+            }).sort((a, b) => {
+                switch (filters.sort) {
+                    case 'date-asc':
+                        return new Date(a.interviewDate) - new Date(b.interviewDate);
+                    case 'date-desc':
+                        return new Date(b.interviewDate) - new Date(a.interviewDate);
+                    case 'name':
+                        return a.candidateName.localeCompare(b.candidateName);
+                    default:
+                        return 0;
+                }
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const stats = {
+                total: interviews.length,
+                completed: interviews.filter(i => i.status === 'completed').length,
+                upcoming: interviews.filter(i => new Date(i.interviewDate) > now && i.status === 'scheduled').length,
+                today: interviews.filter(i => {
+                    const interviewDate = new Date(i.interviewDate);
+                    return interviewDate >= today && interviewDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
+                }).length
+            };
+
+            document.getElementById('totalInterviews').textContent = stats.total;
+            document.getElementById('completedInterviews').textContent = stats.completed;
+            document.getElementById('upcomingInterviews').textContent = stats.upcoming;
+            document.getElementById('todayInterviews').textContent = stats.today;
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Filter change handlers
+            elements.statusFilter.addEventListener('change', handleFilterChange);
+            elements.typeFilter.addEventListener('change', handleFilterChange);
+            elements.dateFilter.addEventListener('change', handleFilterChange);
+            elements.sortFilter.addEventListener('change', handleFilterChange);
+
+            // Schedule form handler
+            elements.scheduleButton.addEventListener('click', handleScheduleSubmit);
+
+            // Setup copy link handlers
+            window.copyInterviewLink = copyInterviewLink;
+            
+            // Setup action button handlers
+            window.startInterview = startInterview;
+            window.cancelInterview = cancelInterview;
+            window.viewInterview = viewInterview;
+        }
+
+        // Filter change handler
+        function handleFilterChange(event) {
+            filters[event.target.id.replace('Filter', '')] = event.target.value;
+            renderInterviews();
+        }
+
+        // Schedule submit handler
+        async function handleScheduleSubmit() {
+            const form = elements.scheduleForm;
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            showLoading(true);
+            try {
+                const interviewData = {
+                    candidateName: document.getElementById('candidateName').value,
+                    candidateEmail: document.getElementById('candidateEmail').value,
+                    interviewDate: document.getElementById('interviewDateTime').value,
+                    interviewType: document.getElementById('interviewType').value,
+                    notes: document.getElementById('interviewNotes').value
+                };
+
+                await interviewService.createInterview(interviewData);
+                elements.scheduleModal.hide();
+                form.reset();
+                form.classList.remove('was-validated');
+                await loadInterviews();
+                showSuccess('Interview scheduled successfully');
+            } catch (error) {
+                showError('Failed to schedule interview');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Action button generators and handlers
+        function generateActionButtons(interview) {
+            const buttons = [];
+            
+            switch (interview.status) {
+                case 'scheduled':
+                    buttons.push(`
+                        <button class="btn btn-sm btn-success me-1" onclick="startInterview('${interview._id}')">
+                            <i class="bi bi-play-fill"></i> Start
+                        </button>
+                        <button class="btn btn-sm btn-danger me-1" onclick="cancelInterview('${interview._id}')">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    `);
+                    break;
+                case 'completed':
+                    buttons.push(`
+                        <button class="btn btn-sm btn-primary me-1" onclick="viewInterview('${interview._id}')">
+                            <i class="bi bi-eye"></i> View Results
+                        </button>
+                    `);
+                    break;
+            }
+
+            buttons.push(`
+                <button class="btn btn-sm btn-outline-secondary" onclick="viewInterview('${interview._id}')">
+                    <i class="bi bi-info-circle"></i> Details
+                </button>
+            `);
+
+            return buttons.join('');
+        }
+
+        async function startInterview(id) {
+            window.location.href = `/interview-room.html?id=${id}`;
+        }
+
+        async function cancelInterview(id) {
+            if (!confirm('Are you sure you want to cancel this interview?')) return;
+
+            showLoading(true);
+            try {
+                await interviewService.updateInterviewStatus(id, 'cancelled');
+                await loadInterviews();
+                showSuccess('Interview cancelled successfully');
+            } catch (error) {
+                showError('Failed to cancel interview');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function viewInterview(id) {
+            showLoading(true);
+            try {
+                const interview = await interviewService.getInterviewById(id);
+                renderInterviewDetails(interview);
+                elements.viewModal.show();
+            } catch (error) {
+                showError('Failed to load interview details');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Interview details renderer
+        function renderInterviewDetails(interview) {
+            const modalBody = document.getElementById('viewModalBody');
+            modalBody.innerHTML = `
+                <div class="interview-details">
+                    <div class="mb-4">
+                        <h6 class="text-muted">Candidate Information</h6>
+                        <p class="mb-1"><strong>Name:</strong> ${interview.candidateName}</p>
+                        <p class="mb-1"><strong>Email:</strong> ${interview.candidateEmail}</p>
+                        <p class="mb-1"><strong>Status:</strong> <span class="status-badge status-${interview.status.toLowerCase()}">${formatStatus(interview.status)}</span></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-muted">Interview Details</h6>
+                        <p class="mb-1"><strong>Date & Time:</strong> ${formatDateTime(interview.interviewDate)}</p>
+                        <p class="mb-1"><strong>Type:</strong> ${formatType(interview.interviewType)}</p>
+                        ${interview.notes ? `<p class="mb-1"><strong>Notes:</strong> ${interview.notes}</p>` : ''}
+                    </div>
+
+                    ${interview.status === 'completed' ? `
+                        <div class="mb-4">
+                            <h6 class="text-muted">Results</h6>
+                            <p class="mb-1"><strong>Duration:</strong> ${formatDuration(interview.duration)}</p>
+                            <p class="mb-1"><strong>Score:</strong> ${interview.score || 'N/A'}</p>
+                            ${interview.feedback ? `<p class="mb-1"><strong>Feedback:</strong> ${interview.feedback}</p>` : ''}
+                        </div>
+                    ` : ''}
+
+                    <div class="interview-link-section">
+                        <h6 class="text-muted">Interview Link</h6>
+                        <div class="interview-link">
+                            ${getInterviewLink(interview._id)}
+                            <button class="btn btn-sm btn-outline-primary copy-button" onclick="copyInterviewLink('${interview._id}')">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Utility functions
+        function formatDateTime(date) {
+            return new Date(date).toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatType(type) {
+            const types = {
+                technical: 'Technical',
+                hr: 'HR',
+                final: 'Final Round'
+            };
+            return types[type] || type;
+        }
+
+        function formatStatus(status) {
+            const statuses = {
+                scheduled: 'Scheduled',
+                completed: 'Completed',
+                cancelled: 'Cancelled',
+                ongoing: 'In Progress'
+            };
+            return statuses[status] || status;
+        }
+
+        function formatDuration(duration) {
+            if (!duration) return 'N/A';
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            return `${minutes}m ${seconds}s`;
+        }
+
+        function getInterviewLink(id) {
+            const baseUrl = window.location.origin;
+            return `${baseUrl}/interview-room.html?id=${id}`;
+        }
+
+        async function copyInterviewLink(id) {
+            const link = getInterviewLink(id);
+            try {
+                await navigator.clipboard.writeText(link);
+                showSuccess('Interview link copied to clipboard');
+            } catch (error) {
+                showError('Failed to copy link');
+            }
+        }
+
+        function showLoading(show) {
+            elements.loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        function showSuccess(message) {
+            showAlert(message, 'success');
+        }
+
+        function showError(message) {
+            showAlert(message, 'danger');
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible alert-float`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => alertDiv.classList.add('show'), 100);
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize the dashboard
+        initialize();
+    </script>
+
+</body>
+</html>
+}
+
+filepath:///interviewService.js /// /// ///
+file code{
+// filepath: interviewService.js
+import axios from 'https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js';
+
+const API_URL = `${window.config?.API_BASE_URL || 'http://localhost:5000'}/api/interviews`;
+
+export const interviewService = {
+    getAllInterviews: async () => {
+        try {
+            const response = await axios.get(API_URL);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching interviews:', error);
+            // Fallback to localStorage if API fails
+            return JSON.parse(localStorage.getItem('interviews') || '[]');
+        }
+    },
+
+    createInterview: async (interviewData) => {
+        try {
+            const formattedData = {
+                candidateName: interviewData.name,
+                candidateEmail: interviewData.email,
+                candidatePhone: interviewData.phone || '',
+                interviewDate: new Date(interviewData.date),
+                interviewType: interviewData.type,
+                notes: interviewData.notes || '',
+                status: 'scheduled'
+            };
+
+            const response = await axios.post(API_URL, formattedData);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating interview:', error);
+            // Fallback to localStorage if API fails
+            let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+            const interview = {
+                ...formattedData,
+                id: Date.now()
+            };
+            interviews.push(interview);
+            localStorage.setItem('interviews', JSON.stringify(interviews));
+            return interview;
+        }
+    },
+
+    updateInterviewStatus: async (id, status) => {
+        try {
+            const response = await axios.patch(`${API_URL}/${id}/status`, { status });
+            return response.data;
+        } catch (error) {
+            console.error('Error updating interview status:', error);
+            // Fallback to localStorage if API fails
+            let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+            const interviewIndex = interviews.findIndex(interview => interview.id === id);
+            if (interviewIndex !== -1) {
+                interviews[interviewIndex].status = status;
+                localStorage.setItem('interviews', JSON.stringify(interviews));
+            }
+            return { id, status };
+        }
+    },
+
+    deleteInterview: async (id) => {
+        try {
+            await axios.delete(`${API_URL}/${id}`);
+            return id;
+        } catch (error) {
+            console.error('Error deleting interview:', error);
+            // Fallback to localStorage if API fails
+            let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+            interviews = interviews.filter(interview => interview.id !== id);
+            localStorage.setItem('interviews', JSON.stringify(interviews));
+            return id;
+        }
+    }
+};
+}
+
+filepath:///login.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Login/Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .auth-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 1rem;
+        }
+        .btn-switch-form {
+            color: #0d6efd;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-switch-form:hover {
+            text-decoration: underline;
+        }
+        .interview-access {
+            background-color: #e9ecef;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        .form-text {
+            font-size: 0.875rem;
+        }
+        .alert {
+            display: none;
+            margin-bottom: 1rem;
+        }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container auth-container">
+        <div class="row">
+            <!-- Login/Register Forms -->
+            <div class="col-md-7 mb-4">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <!-- Login Form -->
+                        <form id="loginForm" class="needs-validation" novalidate>
+                            <h3 class="mb-4">Login</h3>
+                            <div class="alert alert-danger" id="loginError"></div>
+                            
+                            <div class="mb-3">
+                                <label for="loginEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="loginEmail" required>
+                                <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="loginPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="loginPassword" required>
+                                <div class="invalid-feedback">Password is required.</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">Login</button>
+                            
+                            <div class="mt-3 text-center">
+                                <a href="#" class="btn-switch-form" id="showRegister">Need an account? Register as an Interviewer</a>
+                            </div>
+                        </form>
+
+                        <!-- Register Form -->
+                        <form id="registerForm" class="needs-validation" novalidate style="display: none;">
+                            <h3 class="mb-4">Register as Interviewer</h3>
+                            <div class="alert alert-danger" id="registerError"></div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="firstName" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="firstName" required>
+                                    <div class="invalid-feedback">First name is required.</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="lastName" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="lastName" required>
+                                    <div class="invalid-feedback">Last name is required.</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="registerEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="registerEmail" required>
+                                <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="registerPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="registerPassword" required 
+                                       pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$">
+                                <div class="form-text">
+                                    Password must be at least 8 characters long and contain:
+                                    <ul>
+                                        <li>One uppercase letter</li>
+                                        <li>One lowercase letter</li>
+                                        <li>One number</li>
+                                        <li>One special character</li>
+                                    </ul>
+                                </div>
+                                <div class="invalid-feedback">Please enter a valid password.</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">Register</button>
+                            
+                            <div class="mt-3 text-center">
+                                <a href="#" class="btn-switch-form" id="showLogin">Already have an account? Login</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview Access Section -->
+            <div class="col-md-5">
+                <div class="interview-access">
+                    <h3 class="mb-4">Join Interview</h3>
+                    <p class="mb-4">Have an interview link? Enter it below to join your interview session.</p>
+                    
+                    <form id="interviewAccessForm" class="needs-validation" novalidate>
+                        <div class="alert alert-danger" id="accessError"></div>
+                        
+                        <div class="mb-3">
+                            <label for="interviewLink" class="form-label">Interview Link or Code</label>
+                            <input type="text" class="form-control" id="interviewLink" 
+                                   placeholder="Enter your interview link or code" required>
+                            <div class="invalid-feedback">Please enter a valid interview link or code.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="candidateName" class="form-label">Your Name</label>
+                            <input type="text" class="form-control" id="candidateName" required>
+                            <div class="invalid-feedback">Please enter your name.</div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success w-100">Join Interview</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import authService from './src/js/services/authService.js';
+
+        // Form switch handlers
+        document.getElementById('showRegister').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        });
+
+        document.getElementById('showLogin').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        });
+
+        // Loading overlay
+        const showLoading = (show) => {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        };
+
+        // Error display
+        const showError = (elementId, message) => {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+        };
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const form = e.target;
+            form.classList.add('was-validated');
+
+            if (form.checkValidity()) {
+                try {
+                    showLoading(true);
+                    const email = document.getElementById('loginEmail').value;
+                    const password = document.getElementById('loginPassword').value;
+
+                    await authService.login(email, password);
+                    window.location.href = '/interviews.html';
+                } catch (error) {
+                    showError('loginError', error.message || 'Login failed. Please try again.');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        });
+
+        // Register form handler
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const form = e.target;
+            form.classList.add('was-validated');
+
+            if (form.checkValidity()) {
+                try {
+                    showLoading(true);
+                    const userData = {
+                        firstName: document.getElementById('firstName').value,
+                        lastName: document.getElementById('lastName').value,
+                        email: document.getElementById('registerEmail').value,
+                        password: document.getElementById('registerPassword').value,
+                        role: 'interviewer'
+                    };
+
+                    await authService.register(userData);
+                    window.location.href = '/interviews.html';
+                } catch (error) {
+                    showError('registerError', error.message || 'Registration failed. Please try again.');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        });
+
+        // Interview access form handler
+        document.getElementById('interviewAccessForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const form = e.target;
+            form.classList.add('was-validated');
+
+            if (form.checkValidity()) {
+                try {
+                    showLoading(true);
+                    const interviewLink = document.getElementById('interviewLink').value;
+                    const candidateName = document.getElementById('candidateName').value;
+
+                    // Extract interview ID from link or use the code directly
+                    const interviewId = interviewLink.includes('/') 
+                        ? interviewLink.split('/').pop()
+                        : interviewLink;
+
+                    // Verify interview exists and is valid
+                    const response = await fetch(`/api/interviews/verify/${interviewId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ candidateName })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Invalid interview link or code');
+                    }
+
+                    const { token } = await response.json();
+                    
+                    // Store temporary interview access token
+                    sessionStorage.setItem('interviewToken', token);
+                    sessionStorage.setItem('candidateName', candidateName);
+                    
+                    // Redirect to interview room
+                    window.location.href = `/interview-room.html?id=${interviewId}`;
+                } catch (error) {
+                    showError('accessError', error.message || 'Failed to join interview. Please check your link and try again.');
+                } finally {
+                    showLoading(false);
+                }
+            }
+        });
+
+        // Check if user is already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            if (authService.isAuthenticated()) {
+                window.location.href = '/interviews.html';
+            }
+        });
+    </script>
+</body>
+</html>
+
+}
+
+filepath:///model-test.html /// /// ///
+file code{
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Model Test</title>
+</head>
+<body>
+    <h2>Testing Face-API Model Loading</h2>
+    <pre id="results"></pre>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js/dist/face-api.min.js"></script>
+    <script>
+        async function testModelLoading() {
+            const results = document.getElementById('results');
+            const baseUrl = '/public/models';
+
+            try {
+                // Test direct file access first
+                const testPaths = [
+                    `${baseUrl}/tiny_face_detector/tiny_face_detector_model-weights_manifest.json`,
+                    `${baseUrl}/face_landmark_68/face_landmark_68_model-weights_manifest.json`,
+                    `${baseUrl}/ssd_mobilenetv1/ssd_mobilenetv1_model-weights_manifest.json`,
+                    `${baseUrl}/face_recognition/face_recognition_model-weights_manifest.json`
+                ];
+
+                for (const path of testPaths) {
+                    try {
+                        const response = await fetch(path);
+                        const text = await response.text();
+                        results.textContent += `✅ ${path}: ${response.ok ? 'Accessible' : 'Not Found'}\n`;
+                        try {
+                            JSON.parse(text); // Test if it's valid JSON
+                            results.textContent += `   Valid JSON\n`;
+                        } catch {
+                            results.textContent += `   Invalid JSON\n`;
+                        }
+                    } catch (e) {
+                        results.textContent += `❌ ${path}: ${e.message}\n`;
+                    }
+                }
+
+                results.textContent += '\nTrying to load models...\n';
+
+                // Now try loading the models
+                await faceapi.nets.tinyFaceDetector.loadFromUri(baseUrl);
+                results.textContent += '✅ Tiny Face Detector loaded\n';
+
+                await faceapi.nets.faceLandmark68Net.loadFromUri(baseUrl);
+                results.textContent += '✅ Face Landmark Model loaded\n';
+
+                await faceapi.nets.faceRecognitionNet.loadFromUri(baseUrl);
+                results.textContent += '✅ Face Recognition Model loaded\n';
+
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(baseUrl);
+                results.textContent += '✅ SSD Mobilenet Model loaded\n';
+
+            } catch (error) {
+                results.textContent += `\n❌ Error: ${error.message}\n`;
+                console.error('Loading error:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', testModelLoading);
+    </script>
+</body>
+</html>
+}
+
+filepath:///package.json /// /// ///
+file code{
+{
+  "name": "talentsync",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node src/server/server.js",
+    "build": "echo 'Static site'"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "dotenv": "^10.0.0",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.6.1"
+  },
+  
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "vite": "^5.0.0"
+  }
+}
+
+}
+
+filepath:///vercel.json /// /// ///
+file code{
+{
+    "version": 2,
+    "builds": [
+      {
+        "src": "src/server/server.js",
+        "use": "@vercel/node"
+      },
+      {
+        "src": "package.json",
+        "use": "@vercel/static-build"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/api/(.*)",
+        "dest": "src/server/server.js"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "index.html"
+      }
+    ],
+    "env": {
+      "OPENAI_API_KEY": "@openai_api_key",
+      "API_BASE_URL": "@api_base_url"
+    }
+  }
+}
+
+filepath:///src\css\styles.css /// /// ///
+file code{
+body {
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 600px;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+#errorContainer .alert {
+    margin-bottom: 10px;
+}
+.analysis-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    /* Add these lines */
+    display: none;  /* Hide by default */
+    min-width: 200px;
+}
+
+
+.analysis-overlay.visible {
+    display: block;  /* Show when has visible class */
+}
+}
+
+filepath:///src\js\index.js /// /// ///
+file code{
+// src/js/index.js
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('interviewForm');
+    
+    if (!form) return; // Guard clause if we're not on the form page
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Form handling logic
+        const formData = {
+            name: document.getElementById('candidateName').value.trim(),
+            email: document.getElementById('candidateEmail').value.trim(),
+            phone: document.getElementById('candidatePhone').value.trim(),
+            date: document.getElementById('interviewDate').value,
+            type: document.getElementById('interviewType').value,
+            notes: document.getElementById('notes').value.trim()
+        };
+        
+        if (validateForm(formData)) {
+            saveInterview(formData);
+            window.location.href = 'interviews.html';
+        }
+    });
+});
+
+function validateForm(data) {
+    const errors = [];
+    
+    // Name validation
+    if (!data.name || data.name.length < 2 || !/^[a-zA-Z\s]+$/.test(data.name)) {
+        errors.push("Please enter a valid name (at least 2 characters, letters only)");
+    }
+    
+    // Email validation
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.push("Please enter a valid email address");
+    }
+    
+    // Phone validation (optional)
+    if (data.phone && !/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im.test(data.phone)) {
+        errors.push("Please enter a valid phone number or leave blank");
+    }
+    
+    // Date validation
+    const selectedDate = new Date(data.date);
+    if (!data.date || selectedDate <= new Date()) {
+        errors.push("Please select a future date and time");
+    }
+    
+    // Display errors if any
+    const errorContainer = document.getElementById('errorContainer');
+    if (errors.length > 0) {
+        errorContainer.innerHTML = errors.map(error => 
+            `<div class="alert alert-danger">${error}</div>`
+        ).join('');
+        errorContainer.style.display = 'block';
+        return false;
+    }
+    
+    // Clear previous errors
+    errorContainer.style.display = 'none';
+    errorContainer.innerHTML = '';
+    return true;
+}
+
+function saveInterview(data) {
+    const interview = {
+        id: Date.now(),
+        ...data,
+        status: 'scheduled',
+        createdAt: new Date().toISOString()
+    };
+    
+    let interviews = JSON.parse(localStorage.getItem('interviews') || '[]');
+    interviews.push(interview);
+    localStorage.setItem('interviews', JSON.stringify(interviews));
+}
+}
+
+filepath:///src\js\interview-manager.js /// /// ///
+file code{
+import VideoAnalysisService from './services/videoAnalysisService.js';
+import interviewService from './services/interviewService.js';
+
+class InterviewManager {
+    constructor() {
+        this.videoAnalysisService = new VideoAnalysisService();
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.analysisResults = {
+            behavioral: null,
+            openai: null
+        };
+        this.currentInterviewId = null;
+        this.baseURL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : window.location.origin;
+    }
+
+    async initialize() {
+        try {
+            await this.videoAnalysisService.loadModels();
+            this.setupEventListeners();
+            // Get interview ID from URL if exists
+            const urlParams = new URLSearchParams(window.location.search);
+            this.currentInterviewId = urlParams.get('id');
+            
+            if (this.currentInterviewId) {
+                await this.loadInterviewData();
+            }
+            return true;
+        } catch (error) {
+            console.error('Initialization error:', error);
+            this.showError('Failed to initialize interview system');
+            return false;
+        }
+    }
+
+    async loadInterviewData() {
+        try {
+            const interview = await interviewService.getInterviewById(this.currentInterviewId);
+            this.updateInterviewInfo(interview);
+        } catch (error) {
+            console.error('Error loading interview data:', error);
+            this.showError('Failed to load interview data');
+        }
+    }
+
+    updateInterviewInfo(interview) {
+        const infoElement = document.getElementById('interviewInfo');
+        if (infoElement && interview) {
+            infoElement.innerHTML = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">${interview.candidateName}</h5>
+                        <p class="card-text">
+                            <strong>Type:</strong> ${interview.interviewType}<br>
+                            <strong>Date:</strong> ${new Date(interview.interviewDate).toLocaleString()}<br>
+                            <strong>Status:</strong> <span class="badge bg-${this.getStatusBadgeColor(interview.status)}">${interview.status}</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    getStatusBadgeColor(status) {
+        const colors = {
+            scheduled: 'primary',
+            ongoing: 'warning',
+            completed: 'success',
+            cancelled: 'danger'
+        };
+        return colors[status] || 'secondary';
+    }
+
+    setupEventListeners() {
+        const startBtn = document.getElementById('startInterview');
+        const endBtn = document.getElementById('endInterview');
+        const toggleDebugBtn = document.getElementById('toggleDebug');
+
+        if (startBtn) startBtn.addEventListener('click', () => this.startInterview());
+        if (endBtn) endBtn.addEventListener('click', () => this.endInterview());
+        if (toggleDebugBtn) toggleDebugBtn.addEventListener('click', () => this.toggleDebug());
+    }
+
+    async startInterview() {
+        try {
+            if (!this.currentInterviewId) {
+                throw new Error('No interview ID found');
+            }
+
+            // Update interview status to ongoing
+            await interviewService.updateInterviewStatus(this.currentInterviewId, 'ongoing');
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    frameRate: { ideal: 30 }
+                },
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 44100
+                }
+            });
+
+            const videoElement = document.getElementById('videoElement');
+            if (videoElement) {
+                videoElement.srcObject = stream;
+                await videoElement.play();
+            }
+
+            this.setupMediaRecorder(stream);
+            this.startBehavioralAnalysis(videoElement);
+            this.updateUI('recording');
+            
+            return true;
+        } catch (error) {
+            console.error('Error starting interview:', error);
+            this.showError('Failed to start interview: ' + error.message);
+            return false;
+        }
+    }
+
+    setupMediaRecorder(stream) {
+        this.mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'video/webm;codecs=vp9,opus'
+        });
+
+        this.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                this.recordedChunks.push(event.data);
+            }
+        };
+
+        this.mediaRecorder.start(1000); // Record in 1-second chunks
+    }
+
+    async startBehavioralAnalysis(videoElement) {
+        try {
+            const analysisInterval = setInterval(async () => {
+                if (this.mediaRecorder?.state === 'recording') {
+                    const frameAnalysis = await this.videoAnalysisService.analyzeFacialBehavior(
+                        videoElement,
+                        this.updateLiveAnalysis.bind(this)
+                    );
+                    this.updateLiveAnalysis(frameAnalysis);
+                } else {
+                    clearInterval(analysisInterval);
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('Behavioral analysis error:', error);
+            this.showError('Behavioral analysis error: ' + error.message);
+        }
+    }
+
+    updateLiveAnalysis(analysis) {
+        const liveAnalysisDiv = document.getElementById('liveAnalysis');
+        if (!liveAnalysisDiv) return;
+
+        const suspicionScore = this.videoAnalysisService.calculateSuspicionScore(analysis);
+        
+        liveAnalysisDiv.innerHTML = `
+            <div class="alert ${suspicionScore > 50 ? 'alert-warning' : 'alert-info'}">
+                <h5>Live Analysis</h5>
+                <p>Attention Score: ${100 - Math.round((analysis.lookAway / analysis.totalFrames) * 100)}%</p>
+                <p>Behavior Confidence: ${100 - suspicionScore}%</p>
+                ${suspicionScore > 50 ? '<p class="text-danger">⚠️ Unusual behavior detected</p>' : ''}
+            </div>
+        `;
+    }
+
+    async endInterview() {
+        try {
+            if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                this.mediaRecorder.stop();
+                const tracks = this.mediaRecorder.stream.getTracks();
+                tracks.forEach(track => track.stop());
+            }
+
+            // Update interview status
+            if (this.currentInterviewId) {
+                await interviewService.updateInterviewStatus(this.currentInterviewId, 'completed');
+            }
+
+            // Process recording if exists
+            if (this.recordedChunks.length > 0) {
+                await this.processRecording();
+            }
+
+            this.updateUI('ended');
+            return true;
+        } catch (error) {
+            console.error('Error ending interview:', error);
+            this.showError('Failed to end interview: ' + error.message);
+            return false;
+        }
+    }
+
+    async processRecording() {
+        try {
+            const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+            const videoURL = URL.createObjectURL(blob);
+            
+            // Save recording if needed
+            // await this.saveRecording(blob);
+
+            // Generate and show analysis
+            const analysis = await this.videoAnalysisService.generateAnalysisReport(this.analysisResults.behavioral);
+            this.showResults({
+                videoURL,
+                analysis
+            });
+        } catch (error) {
+            console.error('Error processing recording:', error);
+            throw error;
+        }
+    }
+
+    showResults(results) {
+        const resultsDiv = document.getElementById('analysisResults');
+        if (!resultsDiv) return;
+
+        resultsDiv.innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h4>Interview Analysis Results</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Behavioral Analysis</h5>
+                    <div class="alert ${results.analysis.suspicionScore > 50 ? 'alert-warning' : 'alert-info'}">
+                        <p>Suspicion Score: ${results.analysis.suspicionScore}%</p>
+                        <h6>Warning Flags:</h6>
+                        <ul>
+                            ${results.analysis.flags.map(flag => `<li>${flag}</li>`).join('')}
+                        </ul>
+                        <h6>Recommendations:</h6>
+                        <ul>
+                            ${results.analysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h5>Recording</h5>
+                        <video controls src="${results.videoURL}" class="w-100"></video>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.textContent = message;
+        
+        const resultsDiv = document.getElementById('analysisResults');
+        if (resultsDiv) {
+            resultsDiv.prepend(errorDiv);
+        }
+    }
+
+    updateUI(state) {
+        const startBtn = document.getElementById('startInterview');
+        const endBtn = document.getElementById('endInterview');
+        
+        if (startBtn) startBtn.disabled = state === 'recording';
+        if (endBtn) endBtn.disabled = state !== 'recording';
+    }
+
+    toggleDebug() {
+        const debugPanel = document.getElementById('debugPanel');
+        if (debugPanel) {
+            debugPanel.classList.toggle('visible');
+        }
+    }
+}
+
+export default InterviewManager;
+}
+
+filepath:///src\js\interviews.js /// /// ///
+file code{
+import interviewService from './services/interviewService.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+    // UI Elements
+    const elements = {
+        interviewsList: document.getElementById('interviewsList'),
+        exportButton: document.getElementById('exportButton'),
+        loadingSpinner: document.createElement('div'),
+        errorAlert: document.createElement('div')
+    };
+
+    // Initialize UI elements
+    initializeUI();
+
+    // Initial render
+    renderInterviews();
+
+    // Event Listeners
+    if (elements.exportButton) {
+        elements.exportButton.addEventListener('click', handleExport);
+    }
+
+    // Initialize UI components
+    function initializeUI() {
+        // Setup loading spinner
+        elements.loadingSpinner.className = 'd-none text-center my-4';
+        elements.loadingSpinner.innerHTML = `
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        `;
+        elements.interviewsList.parentNode.insertBefore(elements.loadingSpinner, elements.interviewsList);
+
+        // Setup error alert
+        elements.errorAlert.className = 'alert alert-danger d-none my-3';
+        elements.interviewsList.parentNode.insertBefore(elements.errorAlert, elements.interviewsList);
+    }
+
+    // Main render function
+    async function renderInterviews() {
+        showLoading(true);
+        try {
+            const interviews = await interviewService.getAllInterviews();
+            renderInterviewsList(interviews);
+            elements.errorAlert.className = 'alert alert-danger d-none';
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Render interviews list
+    function renderInterviewsList(interviews) {
+        if (!elements.interviewsList) return;
+
+        if (interviews.length === 0) {
+            elements.interviewsList.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center">No interviews scheduled yet.</td>
+                </tr>`;
+            return;
+        }
+
+        elements.interviewsList.innerHTML = interviews.map(interview => `
+            <tr>
+                <td>${interview.candidateName}</td>
+                <td>${interview.candidateEmail}</td>
+                <td>${interviewService.formatInterviewDate(interview.interviewDate)}</td>
+                <td>${formatInterviewType(interview.interviewType)}</td>
+                <td>${generateStatusBadge(interview.status)}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        ${generateActionButtons(interview)}
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+
+        // Add event listeners to newly created buttons
+        addButtonEventListeners();
+    }
+
+    // Helper Functions
+    function formatInterviewType(type) {
+        const types = {
+            technical: 'Technical',
+            hr: 'HR',
+            final: 'Final Round'
+        };
+        return types[type] || type;
+    }
+
+    function generateStatusBadge(status) {
+        const badges = {
+            scheduled: 'primary',
+            completed: 'success',
+            cancelled: 'danger',
+            rescheduled: 'warning'
+        };
+        return `
+            <span class="badge bg-${badges[status] || 'secondary'}">
+                ${status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>`;
+    }
+
+    function generateActionButtons(interview) {
+        return `
+            <button class="btn btn-sm btn-outline-primary me-1" 
+                    data-action="update" 
+                    data-id="${interview._id}"
+                    ${interview.status === 'cancelled' ? 'disabled' : ''}>
+                Update Status
+            </button>
+            <button class="btn btn-sm btn-outline-danger" 
+                    data-action="delete" 
+                    data-id="${interview._id}">
+                Delete
+            </button>`;
+    }
+
+    function addButtonEventListeners() {
+        document.querySelectorAll('button[data-action]').forEach(button => {
+            button.addEventListener('click', handleAction);
+        });
+    }
+
+    // Action Handlers
+    async function handleAction(event) {
+        const button = event.currentTarget;
+        const action = button.dataset.action;
+        const id = button.dataset.id;
+
+        try {
+            if (action === 'delete') {
+                if (await confirmAction('Are you sure you want to delete this interview?')) {
+                    await handleDelete(id);
+                }
+            } else if (action === 'update') {
+                await handleStatusUpdate(id);
+            }
+        } catch (error) {
+            showError(error.message);
+        }
+    }
+
+    async function handleDelete(id) {
+        showLoading(true);
+        try {
+            await interviewService.deleteInterview(id);
+            await renderInterviews();
+            showSuccess('Interview deleted successfully');
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function handleStatusUpdate(id) {
+        const newStatus = await promptStatus();
+        if (!newStatus) return;
+
+        showLoading(true);
+        try {
+            await interviewService.updateInterviewStatus(id, newStatus);
+            await renderInterviews();
+            showSuccess('Interview status updated successfully');
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function handleExport() {
+        try {
+            const interviews = await interviewService.getAllInterviews();
+            const csv = interviewService.generateCSV(interviews);
+            downloadCSV(csv);
+        } catch (error) {
+            showError(error.message);
+        }
+    }
+
+    // Utility Functions
+    function showLoading(show) {
+        elements.loadingSpinner.className = show ? 'text-center my-4' : 'd-none';
+    }
+
+    function showError(message) {
+        elements.errorAlert.className = 'alert alert-danger my-3';
+        elements.errorAlert.textContent = message;
+    }
+
+    function showSuccess(message) {
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        elements.interviewsList.parentNode.insertBefore(alert, elements.interviewsList);
+        setTimeout(() => alert.remove(), 3000);
+    }
+
+    function confirmAction(message) {
+        return window.confirm(message);
+    }
+
+    async function promptStatus() {
+        const statuses = ['scheduled', 'completed', 'cancelled', 'rescheduled'];
+        const status = prompt(
+            `Enter new status (${statuses.join(', ')}):`,
+            'completed'
+        );
+        return statuses.includes(status) ? status : null;
+    }
+
+    function downloadCSV(csv) {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.setAttribute('download', `interviews_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+});
+}
+
+filepath:///src\js\models.js /// /// ///
+file code{
+// src/js/models.js
+const loadModels = async () => {
+    try {
+        // First verify the JSON files
+        const baseUrl = window.location.origin + '/public/models';
+        const verifyModel = async (path) => {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error(`Failed to load ${path}`);
+            const json = await response.json(); // Verify it's valid JSON
+            return json;
+        };
+
+        console.log('Verifying model files...');
+        const modelPaths = {
+            tinyFaceDetector: '/tiny_face_detector/tiny_face_detector_model-weights_manifest.json',
+            faceLandmark: '/face_landmark_68/face_landmark_68_model-weights_manifest.json',
+            ssdMobilenet: '/ssd_mobilenetv1/ssd_mobilenetv1_model-weights_manifest.json',
+            faceRecognition: '/face_recognition/face_recognition_model-weights_manifest.json'
+        };
+
+        // Verify each model file
+        for (const [key, path] of Object.entries(modelPaths)) {
+            const fullPath = baseUrl + path;
+            console.log(`Verifying ${key} at ${fullPath}`);
+            await verifyModel(fullPath);
+            console.log(`✓ ${key} verified`);
+        }
+
+        // Now load the models
+        console.log('Loading models...');
+        const modelPromises = [
+            faceapi.nets.tinyFaceDetector.load(baseUrl),
+            faceapi.nets.faceLandmark68Net.load(baseUrl),
+            faceapi.nets.faceRecognitionNet.load(baseUrl),
+            faceapi.nets.ssdMobilenetv1.load(baseUrl)
+        ];
+
+        await Promise.all(modelPromises);
+        console.log('All models loaded successfully');
+        return true;
+    } catch (error) {
+        console.error('Model loading error:', error);
+        throw error;
+    }
+};
+
+// Export for use in other files
+window.loadFaceApiModels = loadModels;
+}
+
+filepath:///src\js\services\audioService.js /// /// ///
+file code{
+// src/js/services/audioService.js
+import config from './config.js';
+
+class AudioService {
+    constructor() {
+        this.audioContext = null;
+        this.analyser = null;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
+        this.qualityMetrics = {
+            volume: 0,
+            noiseLevel: 0,
+            clarity: 0
+        };
+        this.toneAnalysis = {
+            pitch: [],
+            emotion: null,
+            confidence: 0
+        };
+    }
+
+    async initialize() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+            return true;
+        } catch (error) {
+            console.error('Audio initialization failed:', error);
+            throw error;
+        }
+    }
+
+    async startRecording(stream) {
+        const audioTrack = stream.getAudioTracks()[0];
+        const source = this.audioContext.createMediaStreamSource(new MediaStream([audioTrack]));
+        source.connect(this.analyser);
+
+        this.mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm',
+            audioBitsPerSecond: 128000
+        });
+
+        this.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                this.audioChunks.push(event.data);
+            }
+        };
+
+        this.mediaRecorder.start(1000);
+        this.startAudioAnalysis();
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+        this.stopAudioAnalysis();
+        return new Blob(this.audioChunks, { type: 'audio/webm' });
+    }
+
+    startAudioAnalysis() {
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+
+        const analyze = () => {
+            this.analyser.getFloatTimeDomainData(dataArray);
+            
+            this.qualityMetrics = {
+                volume: this.calculateVolume(dataArray),
+                noiseLevel: this.calculateNoiseLevel(dataArray),
+                clarity: this.calculateClarity(dataArray)
+            };
+
+            this.toneAnalysis = {
+                pitch: this.analyzePitch(dataArray),
+                emotion: this.analyzeEmotion(dataArray),
+                confidence: this.calculateConfidence(dataArray)
+            };
+
+            if (this.onAnalysis) {
+                this.onAnalysis(this.qualityMetrics, this.toneAnalysis);
+            }
+
+            this.analysisFrame = requestAnimationFrame(analyze);
+        };
+
+        this.analysisFrame = requestAnimationFrame(analyze);
+    }
+
+    stopAudioAnalysis() {
+        if (this.analysisFrame) {
+            cancelAnimationFrame(this.analysisFrame);
+        }
+    }
+
+    calculateVolume(dataArray) {
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += Math.abs(dataArray[i]);
+        }
+        return (sum / dataArray.length) * 100;
+    }
+
+    calculateNoiseLevel(dataArray) {
+        let variance = 0;
+        const mean = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        
+        for (let i = 0; i < dataArray.length; i++) {
+            variance += Math.pow(dataArray[i] - mean, 2);
+        }
+        
+        return Math.sqrt(variance / dataArray.length) * 100;
+    }
+
+    calculateClarity(dataArray) {
+        const frequencies = new Float32Array(this.analyser.frequencyBinCount);
+        this.analyser.getFloatFrequencyData(frequencies);
+        
+        let signalPower = 0;
+        let noisePower = 0;
+        
+        for (let i = 0; i < frequencies.length; i++) {
+            if (i < frequencies.length * 0.1 || i > frequencies.length * 0.9) {
+                noisePower += Math.pow(10, frequencies[i] / 10);
+            } else {
+                signalPower += Math.pow(10, frequencies[i] / 10);
+            }
+        }
+        
+        return (signalPower / (noisePower + 1)) * 100;
+    }
+
+    analyzePitch(dataArray) {
+        const frequencies = new Float32Array(this.analyser.frequencyBinCount);
+        this.analyser.getFloatFrequencyData(frequencies);
+        
+        let maxFrequency = 0;
+        let maxAmplitude = -Infinity;
+        
+        for (let i = 0; i < frequencies.length; i++) {
+            if (frequencies[i] > maxAmplitude) {
+                maxAmplitude = frequencies[i];
+                maxFrequency = i * (this.audioContext.sampleRate / this.analyser.fftSize);
+            }
+        }
+        
+        return maxFrequency;
+    }
+
+    analyzeEmotion(dataArray) {
+        const frequencies = new Float32Array(this.analyser.frequencyBinCount);
+        this.analyser.getFloatFrequencyData(frequencies);
+        
+        const energyBands = {
+            low: 0,
+            mid: 0,
+            high: 0
+        };
+        
+        for (let i = 0; i < frequencies.length; i++) {
+            const frequency = i * (this.audioContext.sampleRate / this.analyser.fftSize);
+            const amplitude = Math.pow(10, frequencies[i] / 20);
+            
+            if (frequency < 500) energyBands.low += amplitude;
+            else if (frequency < 2000) energyBands.mid += amplitude;
+            else energyBands.high += amplitude;
+        }
+        
+        if (energyBands.high > energyBands.mid && energyBands.high > energyBands.low) {
+            return 'excited';
+        } else if (energyBands.low > energyBands.mid && energyBands.low > energyBands.high) {
+            return 'calm';
+        } else {
+            return 'neutral';
+        }
+    }
+
+    calculateConfidence(dataArray) {
+        let steadiness = 0;
+        let previousValue = dataArray[0];
+        
+        for (let i = 1; i < dataArray.length; i++) {
+            steadiness += Math.abs(dataArray[i] - previousValue);
+            previousValue = dataArray[i];
+        }
+        
+        return Math.max(0, 100 - (steadiness * 1000));
+    }
+
+    getAudioQualityStatus() {
+        const status = {
+            volume: this.qualityMetrics.volume > 30 && this.qualityMetrics.volume < 90,
+            noise: this.qualityMetrics.noiseLevel < 30,
+            clarity: this.qualityMetrics.clarity > 70
+        };
+
+        return {
+            overall: Object.values(status).every(s => s),
+            details: status
+        };
+    }
+}
+
+export default new AudioService();
+}
+
+filepath:///src\js\services\authService.js /// /// ///
+file code{
+class AuthService {
+    constructor() {
+        // Configuration
+        this.baseURL = window.config?.get('API_BASE_URL', 'http://localhost:5000') + '/api';
+        this.tokenKey = 'authToken';
+        this.userKey = 'currentUser';
+        
+        // Bind methods to maintain context
+        this.checkAuthState = this.checkAuthState.bind(this);
+        this.refreshToken = this.refreshToken.bind(this);
+
+        // Initialize authentication state
+        this.initializeAuthState();
+    }
+
+    // Initialize authentication state
+    async initializeAuthState() {
+        try {
+            const token = this.getToken();
+            if (token) {
+                await this.validateToken(token);
+            }
+        } catch (error) {
+            this.logout();
+        }
+    }
+
+    // Validate token with backend
+    async validateToken(token) {
+        try {
+            const response = await this.get('/auth/validate');
+            if (response.success) {
+                this.setUser(response.user);
+                return true;
+            }
+            throw new Error('Invalid token');
+        } catch (error) {
+            console.warn('Token validation failed:', error);
+            this.logout();
+            return false;
+        }
+    }
+
+    // Login method with enhanced error handling
+    async login(email, password) {
+        try {
+            const response = await this.post('/auth/login', { email, password });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Login failed');
+            }
+
+            // Store token and user information
+            this.setToken(response.token);
+            this.setUser(response.user);
+
+            return response.user;
+        } catch (error) {
+            console.error('Login error:', error);
+            throw error;
+        }
+    }
+
+    // Registration method
+    async register(userData) {
+        try {
+            const response = await this.post('/auth/register', userData);
+
+            if (!response.success) {
+                throw new Error(response.message || 'Registration failed');
+            }
+
+            // Store token and user information
+            this.setToken(response.token);
+            this.setUser(response.user);
+
+            return response.user;
+        } catch (error) {
+            console.error('Registration error:', error);
+            throw error;
+        }
+    }
+
+    // Logout method
+    logout() {
+        // Clear local storage
+        localStorage.removeItem(this.tokenKey);
+        localStorage.removeItem(this.userKey);
+        
+        // Redirect to login page
+        this.redirectToLogin();
+    }
+
+    // Token management
+    getToken() {
+        return localStorage.getItem(this.tokenKey);
+    }
+
+    setToken(token) {
+        localStorage.setItem(this.tokenKey, token);
+    }
+
+    // User management
+    getUser() {
+        const userStr = localStorage.getItem(this.userKey);
+        return userStr ? JSON.parse(userStr) : null;
+    }
+
+    setUser(user) {
+        localStorage.setItem(this.userKey, JSON.stringify(user));
+    }
+
+    // Token refresh mechanism
+    async refreshToken() {
+        try {
+            const response = await this.post('/auth/refresh-token');
+            
+            if (response.success && response.token) {
+                this.setToken(response.token);
+                return response.token;
+            }
+            
+            throw new Error('Token refresh failed');
+        } catch (error) {
+            console.warn('Token refresh error:', error);
+            this.logout();
+            return null;
+        }
+    }
+
+    // Authentication status checks
+    isAuthenticated() {
+        return !!this.getToken();
+    }
+
+    hasRole(role) {
+        const user = this.getUser();
+        return user && user.role === role;
+    }
+
+    // Route protection
+    guardRoute(allowedRoles = []) {
+        if (!this.isAuthenticated()) {
+            this.redirectToLogin();
+            return false;
+        }
+
+        if (allowedRoles.length > 0) {
+            const user = this.getUser();
+            if (!user || !allowedRoles.includes(user.role)) {
+                this.redirectToHome();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Navigation helpers
+    redirectToLogin() {
+        window.location.href = '/login.html';
+    }
+
+    redirectToHome() {
+        window.location.href = '/interviews.html';
+    }
+
+    // HTTP helper methods with authentication
+    async get(endpoint) {
+        return this.request(endpoint, 'GET');
+    }
+
+    async post(endpoint, data = {}) {
+        return this.request(endpoint, 'POST', data);
+    }
+
+    async put(endpoint, data = {}) {
+        return this.request(endpoint, 'PUT', data);
+    }
+
+    async delete(endpoint) {
+        return this.request(endpoint, 'DELETE');
+    }
+
+    // Unified request method with error handling and token management
+    async request(endpoint, method, data = null) {
+        const url = `${this.baseURL}${endpoint}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.getToken()}`
+        };
+
+        try {
+            const config = {
+                method,
+                headers,
+                ...(data ? { body: JSON.stringify(data) } : {})
+            };
+
+            const response = await fetch(url, config);
+
+            // Handle unauthorized errors (potentially expired token)
+            if (response.status === 401) {
+                // Try to refresh token
+                const refreshedToken = await this.refreshToken();
+                if (refreshedToken) {
+                    // Retry the original request with new token
+                    headers['Authorization'] = `Bearer ${refreshedToken}`;
+                    config.headers = headers;
+                    
+                    const retryResponse = await fetch(url, config);
+                    return this.processResponse(retryResponse);
+                }
+            }
+
+            return this.processResponse(response);
+        } catch (error) {
+            console.error(`${method} request to ${endpoint} failed:`, error);
+            throw error;
+        }
+    }
+
+    // Process API response
+    async processResponse(response) {
+        const contentType = response.headers.get('content-type');
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Request failed');
+        }
+
+        // Check if response is JSON
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        }
+
+        return response.text();
+    }
+}
+
+// Create a singleton instance
+const authService = new AuthService();
+export default authService;
+}
+
+filepath:///src\js\services\config.js /// /// ///
+file code{
+(function() {
+    // Determine base URL based on environment
+    const determineBaseURL = () => {
+        const hostname = window.location.hostname;
+        switch (hostname) {
+            case 'localhost':
+                return 'http://localhost:5000';
+            case 'talentsync.vercel.app':
+                return 'https://talentsync-backend.herokuapp.com';
+            default:
+                return window.location.origin;
+        }
+    };
+
+    // Default configuration with comprehensive fallbacks
+    const defaultConfig = {
+        API_BASE_URL: determineBaseURL(),
+        API_ENDPOINTS: {
+            interviews: '/api/interviews',
+            openai: '/api/openai',
+            config: '/api/config'
+        },
+        OPENAI_API_KEY: '',
+        openai: {
+            model: 'gpt-4',
+            maxTokens: 1000,
+            temperature: 0.7,
+            apiKey: '' // Additional fallback
+        },
+        DEBUG_MODE: false,
+        features: {
+            faceRecognition: true,
+            speechAnalysis: true,
+            nlpAnalysis: true,
+            realTimeAnalysis: true
+        },
+        interview: {
+            maxDuration: 3600,
+            defaultTimeLimit: 1800,
+            reminderIntervals: [24, 1], // hours before interview
+            allowedFileTypes: ['video/webm', 'video/mp4'],
+            maxFileSize: 100 * 1024 * 1024,
+            recordingQuality: {
+                audio: {
+                    sampleRate: 48000,
+                    channelCount: 2,
+                    echoCancellation: true,
+                    noiseSuppression: true
+                },
+                video: {
+                    width: 1280,
+                    height: 720,
+                    frameRate: 30
+                }
+            }
+        },
+        security: {
+            encryptionKey: null,
+            tokenExpiration: '24h'
+        },
+        analytics: {
+            trackingEnabled: true,
+            sessionRecording: false
+        }
+    };
+
+    // Create a config object with safe getter and setter
+    const configObject = {
+        _config: { ...defaultConfig },
+        _listeners: [],
+        
+        // Deep get method with optional chaining and fallback
+        get(key, defaultValue = undefined) {
+            const keys = key.split('.');
+            return keys.reduce((obj, k) => 
+                (obj && obj[k] !== undefined) ? obj[k] : 
+                (defaultValue !== undefined ? defaultValue : undefined), 
+                this._config
+            );
+        },
+        
+        // Setter method with deep object support
+        set(key, value) {
+            const keys = key.split('.');
+            let current = this._config;
+            
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!(keys[i] in current)) {
+                    current[keys[i]] = {};
+                }
+                current = current[keys[i]];
+            }
+            
+            const lastKey = keys[keys.length - 1];
+            const oldValue = current[lastKey];
+            current[lastKey] = value;
+
+            // Trigger change listeners
+            this._listeners.forEach(listener => {
+                if (listener.key === key || key.startsWith(listener.key)) {
+                    listener.callback(value, oldValue);
+                }
+            });
+
+            return value;
+        },
+
+        // Add change listener
+        onChange(key, callback) {
+            this._listeners.push({ key, callback });
+        },
+
+        // Remove change listener
+        removeListener(key, callback) {
+            this._listeners = this._listeners.filter(
+                listener => !(listener.key === key && listener.callback === callback)
+            );
+        },
+
+        // Validate configuration
+        validate() {
+            const errors = [];
+            
+            // Validate API Base URL
+            if (!this._config.API_BASE_URL) {
+                errors.push('API Base URL is required');
+            }
+
+            // Validate interview recording settings
+            const videoSettings = this._config.interview.recordingQuality.video;
+            if (videoSettings.width < 640 || videoSettings.height < 480) {
+                errors.push('Video recording quality is too low');
+            }
+
+            // Validate OpenAI settings
+            if (!this._config.openai.model) {
+                errors.push('OpenAI model is required');
+            }
+
+            // Validate interview settings
+            if (this._config.interview.maxDuration <= 0) {
+                errors.push('Invalid maximum interview duration');
+            }
+
+            return {
+                isValid: errors.length === 0,
+                errors
+            };
+        },
+
+        // Reset to default configuration
+        reset() {
+            this._config = { ...defaultConfig };
+            this._listeners.forEach(listener => {
+                listener.callback(this._config, {});
+            });
+        },
+
+        // Export configuration as JSON
+        toJSON() {
+            return JSON.stringify(this._config, null, 2);
+        },
+
+        // Async configuration loader with extensive error handling
+        async load() {
+            try {
+                const baseURL = this._config.API_BASE_URL;
+                const response = await fetch(`${baseURL}/api/config`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const serverConfig = await response.json();
+                
+                // Merge server config with default config
+                Object.keys(serverConfig).forEach(key => {
+                    if (typeof serverConfig[key] === 'object' && serverConfig[key] !== null) {
+                        this.set(key, {
+                            ...defaultConfig[key],
+                            ...serverConfig[key]
+                        });
+                    } else {
+                        this.set(key, serverConfig[key]);
+                    }
+                });
+
+                // Validate configuration
+                const validationResult = this.validate();
+                if (!validationResult.isValid) {
+                    console.warn('Configuration validation failed:', validationResult.errors);
+                }
+
+            } catch (error) {
+                console.warn('Failed to load server config, using defaults:', error);
+            } finally {
+                // Always expose config globally
+                window.config = this;
+                
+                // Dispatch events to notify scripts
+                window.dispatchEvent(new Event('configLoaded'));
+                
+                // Log final config for debugging
+                console.log('Final Configuration:', this._config);
+            }
+
+            return this._config;
+        }
+    };
+
+    // Initialize config loading
+    configObject.load();
+})();
+}
+
+filepath:///src\js\services\emailService.js /// /// ///
+file code{
+// src/js/services/emailService.js
+import nodemailer from 'nodemailer';
+import config from './config.js';
+import { encryptData } from './encryptionService.js';
+
+class EmailService {
+    constructor() {
+        this.transporter = nodemailer.createTransport(config.SMTP_CONFIG);
+    }
+
+    async sendInterviewInvite(interview) {
+        const template = this.getInterviewInviteTemplate(interview);
+        await this.sendEmail({
+            to: interview.email,
+            subject: `Interview Scheduled - ${interview.type}`,
+            html: template
+        });
+
+        this.scheduleReminders(interview);
+    }
+
+    async sendInterviewReminder(interview) {
+        const template = this.getReminderTemplate(interview);
+        await this.sendEmail({
+            to: interview.email,
+            subject: `Reminder: Upcoming Interview - ${interview.type}`,
+            html: template
+        });
+    }
+
+    async scheduleReminders(interview) {
+        const interviewDate = new Date(interview.date);
+        
+        for (const hours of config.interview.reminderIntervals) {
+            const reminderDate = new Date(interviewDate.getTime() - (hours * 60 * 60 * 1000));
+            const now = new Date();
+            
+            if (reminderDate > now) {
+                setTimeout(() => {
+                    this.sendInterviewReminder(interview);
+                }, reminderDate.getTime() - now.getTime());
+            }
+        }
+    }
+
+    async sendEmail(options) {
+        try {
+            const encryptedContent = encryptData(options.html);
+            await this.transporter.sendMail({
+                from: config.SMTP_CONFIG.auth.user,
+                to: options.to,
+                subject: options.subject,
+                html: encryptedContent,
+                headers: {
+                    'X-Priority': '1',
+                    'X-Encrypted': 'true'
+                }
+            });
+            this.logEmailSent(options.to, options.subject);
+        } catch (error) {
+            console.error('Email sending failed:', error);
+            throw error;
+        }
+    }
+
+    getInterviewInviteTemplate(interview) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Interview Scheduled</h2>
+                <p>Dear ${interview.name},</p>
+                <p>Your ${interview.type} interview has been scheduled.</p>
+                <div style="background: #f5f5f5; padding: 15px; margin: 20px 0;">
+                    <p><strong>Date:</strong> ${new Date(interview.date).toLocaleString()}</p>
+                    <p><strong>Type:</strong> ${interview.type}</p>
+                    <p><strong>Location:</strong> Online Video Interview</p>
+                </div>
+                <p><a href="${config.API_BASE_URL}/interview/${interview.id}" 
+                      style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    Join Interview
+                </a></p>
+                <p>Please ensure:</p>
+                <ul>
+                    <li>Stable internet connection</li>
+                    <li>Working camera and microphone</li>
+                    <li>Quiet environment</li>
+                </ul>
+                <p>Best regards,<br>TalentSync Team</p>
+            </div>
+        `;
+    }
+
+    getReminderTemplate(interview) {
+        return `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Interview Reminder</h2>
+                <p>Dear ${interview.name},</p>
+                <p>This is a reminder of your upcoming ${interview.type} interview.</p>
+                <div style="background: #f5f5f5; padding: 15px; margin: 20px 0;">
+                    <p><strong>Date:</strong> ${new Date(interview.date).toLocaleString()}</p>
+                    <p><strong>Type:</strong> ${interview.type}</p>
+                </div>
+                <p><a href="${config.API_BASE_URL}/interview/${interview.id}" 
+                      style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    Join Interview
+                </a></p>
+            </div>
+        `;
+    }
+
+    logEmailSent(recipient, subject) {
+        const log = {
+            timestamp: new Date().toISOString(),
+            recipient,
+            subject,
+            success: true
+        };
+        
+        let emailLogs = JSON.parse(localStorage.getItem('emailLogs') || '[]');
+        emailLogs.push(log);
+        localStorage.setItem('emailLogs', JSON.stringify(emailLogs));
+    }
+}
+
+export default new EmailService();
+}
+
+filepath:///src\js\services\faceAnalysisService.js /// /// ///
+file code{
+// src/js/services/faceAnalysisService.js
+class FaceAnalysisService {
+    constructor() {
+        this.isModelLoaded = false;
+        this.lastFrameTime = Date.now();
+        this.frameCounter = 0;
+        this.suspiciousActivityCount = 0;
+        this.outOfFrameCount = 0;
+    }
+
+    async initialize() {
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.load('/models'),
+                faceapi.nets.faceLandmark68Net.load('/models'),
+                faceapi.nets.faceExpressionNet.load('/models')
+            ]);
+            this.isModelLoaded = true;
+            console.log('Face models loaded successfully');
+            return true;
+        } catch (error) {
+            console.error('Error loading face models:', error);
+            throw new Error('Failed to load face detection models');
+        }
+    }
+
+    async analyzeFrame(videoElement) {
+        if (!this.isModelLoaded) {
+            throw new Error('Face models not loaded');
+        }
+
+        const now = Date.now();
+        if (now - this.lastFrameTime < 100) { // Limit to 10 FPS
+            return null;
+        }
+        this.lastFrameTime = now;
+
+        try {
+            const detection = await faceapi.detectSingleFace(
+                videoElement,
+                new faceapi.TinyFaceDetectorOptions()
+            ).withFaceLandmarks().withFaceExpressions();
+
+            if (!detection) {
+                this.outOfFrameCount++;
+                return {
+                    status: 'not_detected',
+                    outOfFrameCount: this.outOfFrameCount,
+                    message: 'No face detected'
+                };
+            }
+
+            const analysis = this.analyzeBehavior(detection);
+            this.frameCounter++;
+
+            return {
+                status: 'detected',
+                analysis,
+                frameCount: this.frameCounter,
+                outOfFrameCount: this.outOfFrameCount,
+                suspiciousCount: this.suspiciousActivityCount
+            };
+        } catch (error) {
+            console.error('Frame analysis error:', error);
+            return {
+                status: 'error',
+                message: error.message
+            };
+        }
+    }
+
+    analyzeBehavior(detection) {
+        const analysis = {
+            attention: this.calculateAttention(detection),
+            expressions: detection.expressions,
+            headPose: this.estimateHeadPose(detection.landmarks),
+            suspiciousActivity: false,
+            warnings: []
+        };
+
+        // Check for suspicious patterns
+        if (analysis.attention < 0.6) {
+            analysis.warnings.push('Low attention detected');
+            this.suspiciousActivityCount++;
+        }
+
+        if (this.isErraticMovement(detection.landmarks)) {
+            analysis.warnings.push('Erratic movement detected');
+            this.suspiciousActivityCount++;
+        }
+
+        if (this.detectUnusualExpressions(detection.expressions)) {
+            analysis.warnings.push('Unusual expression patterns');
+            this.suspiciousActivityCount++;
+        }
+
+        analysis.suspiciousActivity = analysis.warnings.length > 0;
+
+        return analysis;
+    }
+
+    calculateAttention(detection) {
+        const landmarks = detection.landmarks.positions;
+        const eyePoints = landmarks.slice(36, 48); // Eye landmarks
+        
+        // Calculate eye aspect ratio to detect looking away
+        const leftEye = eyePoints.slice(0, 6);
+        const rightEye = eyePoints.slice(6, 12);
+        
+        const leftEAR = this.getEyeAspectRatio(leftEye);
+        const rightEAR = this.getEyeAspectRatio(rightEye);
+        
+        const averageEAR = (leftEAR + rightEAR) / 2;
+        return Math.min(Math.max(averageEAR / 0.3, 0), 1); // Normalize between 0 and 1
+    }
+
+    getEyeAspectRatio(eye) {
+        const verticalDist1 = this.getDistance(eye[1], eye[5]);
+        const verticalDist2 = this.getDistance(eye[2], eye[4]);
+        const horizontalDist = this.getDistance(eye[0], eye[3]);
+        return (verticalDist1 + verticalDist2) / (2 * horizontalDist);
+    }
+
+    getDistance(point1, point2) {
+        return Math.sqrt(
+            Math.pow(point2.x - point1.x, 2) + 
+            Math.pow(point2.y - point1.y, 2)
+        );
+    }
+
+    estimateHeadPose(landmarks) {
+        const nose = landmarks.positions[30];
+        const leftEye = landmarks.positions[36];
+        const rightEye = landmarks.positions[45];
+        
+        const eyeCenter = {
+            x: (leftEye.x + rightEye.x) / 2,
+            y: (leftEye.y + rightEye.y) / 2
+        };
+        
+        return {
+            yaw: (nose.x - eyeCenter.x) / (rightEye.x - leftEye.x),
+            pitch: (nose.y - eyeCenter.y) / (rightEye.x - leftEye.x)
+        };
+    }
+
+    isErraticMovement(landmarks) {
+        const nose = landmarks.positions[30];
+        if (!this.lastNosePosition) {
+            this.lastNosePosition = nose;
+            return false;
+        }
+
+        const movement = this.getDistance(nose, this.lastNosePosition);
+        this.lastNosePosition = nose;
+        
+        return movement > 20; // Threshold for erratic movement
+    }
+
+    detectUnusualExpressions(expressions) {
+        const dominantExpression = Object.entries(expressions)
+            .reduce((a, b) => a[1] > b[1] ? a : b)[0];
+        
+        const unusualExpressions = ['angry', 'disgusted', 'fearful'];
+        return unusualExpressions.includes(dominantExpression);
+    }
+
+    getAnalysisSummary() {
+        return {
+            totalFrames: this.frameCounter,
+            outOfFramePercentage: (this.outOfFrameCount / this.frameCounter) * 100,
+            suspiciousActivityPercentage: (this.suspiciousActivityCount / this.frameCounter) * 100
+        };
+    }
+
+    reset() {
+        this.frameCounter = 0;
+        this.suspiciousActivityCount = 0;
+        this.outOfFrameCount = 0;
+        this.lastNosePosition = null;
+    }
+}
+
+window.FaceAnalysisService = new FaceAnalysisService();
+}
+
+filepath:///src\js\services\interviewService.js /// /// ///
+file code{
+import axios from 'https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js';
+import authService from './authService.js';
+
+class InterviewService {
+    constructor() {
+        // Initialize base configuration
+        this.baseURL = window.config?.get('API_BASE_URL', 'http://localhost:5000');
+        this.apiUrl = `${this.baseURL}${window.config?.get('API_ENDPOINTS.interviews', '/api/interviews')}`;
+        
+        // Create axios instance with dynamic configuration
+        this.axiosInstance = axios.create({
+            baseURL: this.apiUrl,
+            timeout: 10000,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        // Interceptors for request and response
+        this.setupInterceptors();
+    }
+
+    // Setup axios interceptors for authentication and error handling
+    setupInterceptors() {
+        // Request interceptor
+        this.axiosInstance.interceptors.request.use(
+            config => {
+                const token = authService.getToken();
+                if (token) {
+                    config.headers['Authorization'] = `Bearer ${token}`;
+                }
+                return config;
+            },
+            error => Promise.reject(error)
+        );
+
+        // Response interceptor
+        this.axiosInstance.interceptors.response.use(
+            response => response,
+            async error => {
+                const originalRequest = error.config;
+
+                // If token has expired, try to refresh
+                if (error.response?.status === 401 && !originalRequest._retry) {
+                    originalRequest._retry = true;
+                    try {
+                        // Attempt to refresh token
+                        await authService.refreshToken();
+                        
+                        // Retry the original request with new token
+                        const token = authService.getToken();
+                        originalRequest.headers['Authorization'] = `Bearer ${token}`;
+                        return this.axiosInstance(originalRequest);
+                    } catch (refreshError) {
+                        // If refresh fails, logout user
+                        authService.logout();
+                        return Promise.reject(refreshError);
+                    }
+                }
+
+                return Promise.reject(error);
+            }
+        );
+    }
+
+    // Fetch all interviews with comprehensive error handling
+    async getAllInterviews() {
+        try {
+            const response = await this.axiosInstance.get('/');
+            return response.data;
+        } catch (error) {
+            return this.handleError(error, this.getLocalInterviews);
+        }
+    }
+
+    // Create a new interview
+    async createInterview(interviewData) {
+        try {
+            // Standardize interview data format
+            const formattedData = {
+                candidateName: interviewData.name || interviewData.candidateName,
+                candidateEmail: interviewData.email || interviewData.candidateEmail,
+                candidatePhone: interviewData.phone || interviewData.candidatePhone || '',
+                interviewDate: new Date(interviewData.date || interviewData.interviewDate).toISOString(),
+                interviewType: interviewData.type || interviewData.interviewType,
+                notes: interviewData.notes || '',
+                status: 'scheduled'
+            };
+
+            const response = await this.axiosInstance.post('/', formattedData);
+            
+            // Update local storage
+            this.updateLocalInterviews(response.data);
+            
+            return response.data;
+        } catch (error) {
+            return this.handleError(error, () => this.createLocalInterview(interviewData));
+        }
+    }
+
+    // Update interview status
+    async updateInterviewStatus(id, status) {
+        try {
+            const response = await this.axiosInstance.patch(`/${id}/status`, { status });
+            this.updateLocalInterviews(response.data);
+            return response.data;
+        } catch (error) {
+            return this.handleError(error, () => this.updateLocalInterviewStatus(id, status));
+        }
+    }
+
+    // Get a specific interview by ID
+    async getInterviewById(id) {
+        try {
+            const response = await this.axiosInstance.get(`/${id}`);
+            return response.data;
+        } catch (error) {
+            return this.handleError(error, () => this.getLocalInterviewById(id));
+        }
+    }
+
+    // Delete an interview
+    async deleteInterview(id) {
+        try {
+            await this.axiosInstance.delete(`/${id}`);
+            this.removeLocalInterview(id);
+            return id;
+        } catch (error) {
+            return this.handleError(error, () => this.removeLocalInterview(id));
+        }
+    }
+
+    // Error handling with fallback to local storage
+    async handleError(error, fallbackMethod) {
+        console.error('Interview Service Error:', error);
+        
+        // Log detailed error information
+        if (error.response) {
+            console.error('Response Error:', error.response.data);
+            console.error('Status Code:', error.response.status);
+        }
+
+        // Attempt fallback method if provided
+        if (fallbackMethod && typeof fallbackMethod === 'function') {
+            try {
+                return await fallbackMethod();
+            } catch (fallbackError) {
+                console.error('Fallback method failed:', fallbackError);
+                throw error;
+            }
+        }
+
+        throw error;
+    }
+
+    // Local Storage Methods for Offline Support
+    getLocalInterviews() {
+        return JSON.parse(localStorage.getItem('interviews') || '[]');
+    }
+
+    getLocalInterviewById(id) {
+        const interviews = this.getLocalInterviews();
+        return interviews.find(interview => interview._id === id);
+    }
+
+    updateLocalInterviews(interview) {
+        const interviews = this.getLocalInterviews();
+        const index = interviews.findIndex(i => i._id === interview._id);
+        
+        if (index !== -1) {
+            interviews[index] = { ...interviews[index], ...interview };
+        } else {
+            interviews.push(interview);
+        }
+        
+        localStorage.setItem('interviews', JSON.stringify(interviews));
+    }
+
+    createLocalInterview(interviewData) {
+        const interviews = this.getLocalInterviews();
+        const newInterview = {
+            _id: `local_${Date.now()}`,
+            ...interviewData,
+            createdAt: new Date().toISOString(),
+            status: 'scheduled'
+        };
+        
+        interviews.push(newInterview);
+        localStorage.setItem('interviews', JSON.stringify(interviews));
+        
+        return newInterview;
+    }
+
+    updateLocalInterviewStatus(id, status) {
+        const interviews = this.getLocalInterviews();
+        const interviewIndex = interviews.findIndex(i => i._id === id);
+        
+        if (interviewIndex !== -1) {
+            interviews[interviewIndex].status = status;
+            localStorage.setItem('interviews', JSON.stringify(interviews));
+        }
+        
+        return interviews[interviewIndex];
+    }
+
+    removeLocalInterview(id) {
+        const interviews = this.getLocalInterviews().filter(i => i._id !== id);
+        localStorage.setItem('interviews', JSON.stringify(interviews));
+    }
+
+    // Utility Methods
+    formatInterviewDate(date) {
+        return new Date(date).toLocaleString('en-US', {
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit'
+        });
+    }
+
+    generateCSV(interviews) {
+        const headers = ['Name', 'Email', 'Phone', 'Date', 'Type', 'Status', 'Notes'];
+        const csvRows = interviews.map(interview => [
+            interview.candidateName,
+            interview.candidateEmail,
+            interview.candidatePhone || '',
+            this.formatInterviewDate(interview.interviewDate),
+            interview.interviewType,
+            interview.status,
+            (interview.notes || '').replace(/,/g, ';')
+        ]);
+        
+        return [
+            headers.join(','), 
+            ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+        ].join('\n');
+    }
+}
+
+// Create and export singleton instance
+const interviewService = new InterviewService();
+export default interviewService;
+}
+
+filepath:///src\js\services\interviewSession.js /// /// ///
+file code{
+// frontend/src/js/services/interviewSession.js
+
+import authService from './authService.js';
+import openaiService from './openaiService.js';
+
+export class InterviewSession {
+    constructor(interviewId) {
+        this.interviewId = interviewId;
+        this.state = {
+            status: 'initializing',
+            isInterviewer: false,
+            mediaStream: null,
+            audioContext: null,
+            audioAnalyser: null,
+            mediaRecorder: null,
+            recordedChunks: [],
+            transcript: '',
+            analysis: null,
+            startTime: null,
+            participants: new Map(),
+            deviceStatus: {
+                camera: false,
+                microphone: false
+            }
+        };
+
+        this.eventListeners = new Map();
+        this.recordingInterval = null;
+        this.analysisInterval = null;
+
+        // Bind methods to maintain context
+        this.handleStreamError = this.handleStreamError.bind(this);
+        this.handleDataAvailable = this.handleDataAvailable.bind(this);
+        this.handleRecordingStop = this.handleRecordingStop.bind(this);
+    }
+
+    // Event handling
+    on(event, callback) {
+        if (!this.eventListeners.has(event)) {
+            this.eventListeners.set(event, new Set());
+        }
+        this.eventListeners.get(event).add(callback);
+    }
+
+    off(event, callback) {
+        if (this.eventListeners.has(event)) {
+            this.eventListeners.get(event).delete(callback);
+        }
+    }
+
+    emit(event, data) {
+        if (this.eventListeners.has(event)) {
+            this.eventListeners.get(event).forEach(callback => callback(data));
+        }
+    }
+
+    // Initialize session
+    async initialize() {
+        try {
+            // Check if user is interviewer or candidate
+            this.state.isInterviewer = authService.isAuthenticated() && (
+                authService.hasRole('interviewer') || authService.hasRole('admin')
+            );
+
+            if (!this.state.isInterviewer && !sessionStorage.getItem('interviewToken')) {
+                throw new Error('Unauthorized access');
+            }
+
+            // Load interview details
+            await this.loadInterviewDetails();
+
+            // Initialize services
+            await this.initializeServices();
+
+            this.state.status = 'ready';
+            this.emit('stateChange', this.state.status);
+            return true;
+        } catch (error) {
+            console.error('Session initialization failed:', error);
+            this.handleError(error);
+            return false;
+        }
+    }
+
+    async loadInterviewDetails() {
+        const response = await fetch(`/api/interviews/${this.interviewId}`, {
+            headers: this.getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load interview details');
+}
+
+filepath:///src\js\services\interviewSessionManager.js /// /// ///
+file code{
+// src/js/services/interviewSessionManager.js
+class InterviewSessionManager {
+    constructor() {
+        this.currentSession = null;
+        this.recordingTimer = null;
+        this.maxDuration = window.config.interview.maxDuration;
+        this.services = {
+            face: window.FaceAnalysisService,
+            voice: window.VoiceAnalysisService,
+            openai: window.OpenAIService
+        };
+        this.analysisData = {
+            behavioral: [],
+            voice: [],
+            transcript: ''
+        };
+    }
+
+    async initializeSession(sessionConfig = {}) {
+        try {
+            await Promise.all([
+                this.services.face.initialize(),
+                this.services.voice.initialize()
+            ]);
+
+            this.currentSession = {
+                id: `session_${Date.now()}`,
+                startTime: new Date(),
+                config: {
+                    ...window.config.interview,
+                    ...sessionConfig
+                },
+                status: 'initialized'
+            };
+
+            return this.currentSession;
+        } catch (error) {
+            console.error('Session initialization failed:', error);
+            throw error;
+        }
+    }
+
+    async startRecording() {
+        if (!this.currentSession) {
+            throw new Error('Session not initialized');
+        }
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: this.currentSession.config.recordingQuality.video,
+                audio: this.currentSession.config.recordingQuality.audio
+            });
+
+            // Start face analysis
+            this.startFaceAnalysis(stream);
+
+            // Start voice analysis
+            await this.startVoiceAnalysis(stream);
+
+            // Start session timer
+            this.startSessionTimer();
+
+            this.currentSession.status = 'recording';
+            this.currentSession.stream = stream;
+
+            return true;
+        } catch (error) {
+            console.error('Recording start failed:', error);
+            throw error;
+        }
+    }
+
+    startFaceAnalysis(stream) {
+        const videoTrack = stream.getVideoTracks()[0];
+        const videoElement = document.getElementById('videoElement');
+        videoElement.srcObject = new MediaStream([videoTrack]);
+
+        this.faceAnalysisInterval = setInterval(async () => {
+            const analysis = await this.services.face.analyzeFrame(videoElement);
+            if (analysis) {
+                this.analysisData.behavioral.push({
+                    timestamp: Date.now(),
+                    ...analysis
+                });
+                this.updateLiveAnalysis(analysis);
+            }
+        }, 1000);
+    }
+
+    async startVoiceAnalysis(stream) {
+        this.services.voice.setTranscriptUpdateCallback(this.handleTranscriptUpdate.bind(this));
+        this.services.voice.setVolumeUpdateCallback(this.handleVolumeUpdate.bind(this));
+        await this.services.voice.startRecording(stream);
+    }
+
+    handleTranscriptUpdate(data) {
+        this.analysisData.transcript = data.final;
+        this.analysisData.voice.push({
+            timestamp: Date.now(),
+            ...data.analysis
+        });
+        this.updateTranscriptDisplay(data);
+    }
+
+    handleVolumeUpdate(data) {
+        const meter = document.getElementById('audioMeterFill');
+        if (meter) {
+            meter.style.width = `${data.volume}%`;
+            meter.style.backgroundColor = this.getVolumeColor(data);
+        }
+    }
+
+    getVolumeColor(data) {
+        if (data.volume < 30) return '#dc3545'; // Too quiet
+        if (data.volume > 80) return '#ffc107'; // Too loud
+        return '#28a745'; // Good
+    }
+
+    updateLiveAnalysis(analysis) {
+        const liveAnalysis = document.getElementById('liveAnalysis');
+        if (liveAnalysis) {
+            const alertLevel = this.calculateAlertLevel(analysis);
+            liveAnalysis.className = `analysis-overlay ${alertLevel}`;
+            liveAnalysis.innerHTML = this.generateLiveAnalysisHTML(analysis);
+        }
+    }
+
+    calculateAlertLevel(analysis) {
+        if (analysis.suspiciousCount > 5) return 'suspicious-alert';
+        if (analysis.outOfFrameCount > 10) return 'warning-alert';
+        return '';
+    }
+
+    generateLiveAnalysisHTML(analysis) {
+        return `
+            <div>
+                <p>
+                    <span class="status-indicator ${analysis.status === 'detected' ? 'status-active' : 'status-warning'}"></span>
+                    Face Detection: ${analysis.status === 'detected' ? '✓ Active' : '⚠️ Check Position'}
+                </p>
+                <p>
+                    <span class="status-indicator ${analysis.analysis?.attention > 0.7 ? 'status-active' : 'status-warning'}"></span>
+                    Attention: ${Math.round((analysis.analysis?.attention || 0) * 100)}%
+                </p>
+                ${analysis.warnings?.length ? `
+                    <div class="warnings">
+                        ${analysis.warnings.map(w => `<p class="text-warning">⚠️ ${w}</p>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    updateTranscriptDisplay(data) {
+        const transcriptElement = document.getElementById('openaiAnalysis');
+        if (transcriptElement) {
+            transcriptElement.innerHTML = `
+                <div class="alert alert-info">
+                    <h5>Interview Transcription</h5>
+                    <p><strong>Current Transcript:</strong></p>
+                    <p>${data.final}</p>
+                    ${data.interim ? `<p><strong>Current:</strong> ${data.interim}</p>` : ''}
+                    <div class="mt-3">
+                        <small class="text-muted">Last updated: ${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    startSessionTimer() {
+        const timerElement = document.getElementById('timer');
+        const startTime = Date.now();
+
+        this.recordingTimer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const minutes = Math.floor(elapsed / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+
+            if (timerElement) {
+                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            if (elapsed >= this.maxDuration) {
+                this.stopRecording('timeout');
+            }
+        }, 1000);
+    }
+
+    async stopRecording(reason = 'manual') {
+        if (!this.currentSession || this.currentSession.status !== 'recording') {
+            return;
+        }
+
+        clearInterval(this.recordingTimer);
+        clearInterval(this.faceAnalysisInterval);
+
+        // Stop all tracks
+        this.currentSession.stream.getTracks().forEach(track => track.stop());
+
+        // Stop voice analysis
+        const voiceData = await this.services.voice.stopRecording();
+
+        // Generate final analysis
+        const finalAnalysis = await this.generateFinalAnalysis();
+
+        this.currentSession.status = 'completed';
+        this.currentSession.endTime = new Date();
+        this.currentSession.endReason = reason;
+        this.currentSession.analysis = finalAnalysis;
+
+        return finalAnalysis;
+    }
+
+    async generateFinalAnalysis() {
+        const transcript = this.analysisData.transcript;
+        
+        try {
+            const [openAiAnalysis, followUpQuestions] = await Promise.all([
+                this.services.openai.analyzeInterview(transcript),
+                this.services.openai.generateFollowUpQuestions(transcript)
+            ]);
+
+            const behavioralSummary = this.summarizeBehavioralData();
+            const voiceSummary = this.summarizeVoiceData();
+
+            return {
+                transcript,
+                openAiAnalysis,
+                followUpQuestions,
+                behavioral: behavioralSummary,
+                voice: voiceSummary,
+                timestamp: new Date().toISOString()
+            };
+        } catch (error) {
+            console.error('Analysis generation failed:', error);
+            throw error;
+        }
+    }
+
+    summarizeBehavioralData() {
+        const totalFrames = this.analysisData.behavioral.length;
+        if (totalFrames === 0) return null;
+
+        const summary = {
+            attentionScore: 0,
+            suspiciousCount: 0,
+            outOfFrameCount: 0,
+            warnings: []
+        };
+
+        this.analysisData.behavioral.forEach(frame => {
+            if (frame.analysis?.attention) {
+                summary.attentionScore += frame.analysis.attention;
+            }
+            if (frame.suspiciousCount) summary.suspiciousCount += frame.suspiciousCount;
+            if (frame.outOfFrameCount) summary.outOfFrameCount += frame.outOfFrameCount;
+            if (frame.analysis?.warnings) {
+                summary.warnings.push(...frame.analysis.warnings);
+            }
+        });
+
+        summary.attentionScore = summary.attentionScore / totalFrames;
+        summary.warnings = [...new Set(summary.warnings)]; // Remove duplicates
+
+        return summary;
+    }
+
+    summarizeVoiceData() {
+        const voiceData = this.analysisData.voice;
+        if (voiceData.length === 0) return null;
+
+        return {
+            averageVolume: voiceData.reduce((sum, data) => sum + data.volume, 0) / voiceData.length,
+            clarityScore: voiceData.reduce((sum, data) => sum + data.clarity, 0) / voiceData.length,
+            confidenceScore: voiceData.reduce((sum, data) => sum + data.confidence, 0) / voiceData.length,
+            wordsPerMinute: this.services.voice.calculateSpeakingPace()
+        };
+    }
+
+    getSessionData() {
+        return this.currentSession;
+    }
+
+    reset() {
+        if (this.currentSession?.stream) {
+            this.currentSession.stream.getTracks().forEach(track => track.stop());
+        }
+        
+        clearInterval(this.recordingTimer);
+        clearInterval(this.faceAnalysisInterval);
+        
+        this.currentSession = null;
+        this.analysisData = {
+            behavioral: [],
+            voice: [],
+            transcript: ''
+        };
+        
+        this.services.voice.reset();
+        this.services.face.reset();
+    }
+}
+
+window.InterviewSessionManager = new InterviewSessionManager();
+}
+
+filepath:///src\js\services\openaiService.js /// /// ///
+file code{
+class OpenAIService {
+    constructor() {
+        this.baseURL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : window.location.origin;
+        this.currentQuestionIndex = 0;
+        this.transcriptHistory = [];
+        this.lastResponseTime = 0;
+        this.minResponseInterval = 3000;
+        this.questionSet = this.getDefaultQuestions();
+    }
+
+    getDefaultQuestions() {
+        return [
+            {
+                category: "Introduction",
+                question: "Please introduce yourself and tell us about your background.",
+                minResponseLength: 50
+            },
+            {
+                category: "Experience",
+                question: "What relevant experience do you have for this position?",
+                minResponseLength: 100
+            },
+            {
+                category: "Technical Skills",
+                question: "Could you describe your technical skills and how they align with this role?",
+                minResponseLength: 100
+            },
+            {
+                category: "Problem Solving",
+                question: "Tell me about a challenging problem you solved in your previous work.",
+                minResponseLength: 150
+            },
+            {
+                category: "Team Work",
+                question: "How do you approach working in a team environment?",
+                minResponseLength: 100
+            },
+            {
+                category: "Leadership",
+                question: "Have you ever led a project or team? Please describe your experience.",
+                minResponseLength: 150
+            },
+            {
+                category: "Goals",
+                question: "What are your career goals and how does this position fit into them?",
+                minResponseLength: 100
+            },
+            {
+                category: "Closing",
+                question: "Do you have any questions for us?",
+                minResponseLength: 50
+            }
+        ];
+    }
+
+    async analyzeInterview(transcript) {
+        try {
+            const response = await fetch(`${this.baseURL}/api/openai/analyze`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ transcript })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Analysis failed with status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            return this.validateAnalysisResponse(data);
+        } catch (error) {
+            console.error('Interview analysis error:', error);
+            return this.generateFallbackAnalysis(transcript);
+        }
+    }
+
+    validateAnalysisResponse(data) {
+        const requiredFields = ['key_traits', 'behavioral_flags', 'risk_factors', 'recommendations'];
+        const isValid = requiredFields.every(field => data.hasOwnProperty(field));
+
+        if (!isValid) {
+            throw new Error('Invalid analysis response structure');
+        }
+
+        return data;
+    }
+
+    generateFallbackAnalysis(transcript) {
+        const words = transcript.split(/\s+/).length;
+        const sentences = transcript.split(/[.!?]+/).length;
+        const avgWordsPerSentence = words / sentences;
+
+        return {
+            key_traits: {
+                confidence: this.calculateConfidenceScore(transcript),
+                clarity: this.calculateClarityScore(transcript),
+                technical_knowledge: this.detectTechnicalContent(transcript),
+                communication: avgWordsPerSentence >= 10 ? 0.7 : 0.4,
+                leadership: this.detectLeadershipTraits(transcript)
+            },
+            behavioral_flags: this.generateBehavioralFlags(transcript),
+            risk_factors: this.identifyRiskFactors(transcript),
+            recommendations: this.generateRecommendations(transcript)
+        };
+    }
+
+    async generateFollowUpQuestions(transcript) {
+        try {
+            const response = await fetch(`${this.baseURL}/api/openai/follow-up`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ transcript })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to generate follow-up questions: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.questions || this.generateFallbackQuestions(transcript);
+        } catch (error) {
+            console.error('Follow-up questions error:', error);
+            return this.generateFallbackQuestions(transcript);
+        }
+    }
+
+    getCurrentQuestion() {
+        const safeIndex = Math.min(Math.max(this.currentQuestionIndex, 0), this.questionSet.length - 1);
+        return {
+            ...this.questionSet[safeIndex],
+            index: safeIndex + 1,
+            total: this.questionSet.length
+        };
+    }
+
+    nextQuestion(currentResponse) {
+        if (this.canMoveToNextQuestion(currentResponse)) {
+            if (currentResponse?.trim()) {
+                this.addToTranscriptHistory(currentResponse);
+            }
+
+            if (this.currentQuestionIndex < this.questionSet.length - 1) {
+                this.currentQuestionIndex++;
+                this.lastResponseTime = Date.now();
+            }
+        }
+        return this.getCurrentQuestion();
+    }
+
+    canMoveToNextQuestion(response) {
+        if (!response || !response.trim()) return false;
+
+        const currentQuestion = this.getCurrentQuestion();
+        const minLength = currentQuestion.minResponseLength || 50;
+        const words = response.trim().split(/\s+/).length;
+        const timeElapsed = Date.now() - this.lastResponseTime;
+
+        return words >= minLength && timeElapsed > this.minResponseInterval;
+    }
+
+    addToTranscriptHistory(response) {
+        const currentQuestion = this.getCurrentQuestion();
+        const entry = {
+            question: currentQuestion.question,
+            response: response.trim(),
+            category: currentQuestion.category,
+            timestamp: new Date().toISOString()
+        };
+
+        if (!this.transcriptHistory.some(item => 
+            item.question === entry.question && 
+            item.response === entry.response
+        )) {
+            this.transcriptHistory.push(entry);
+        }
+    }
+
+    getFormattedTranscript() {
+        return this.transcriptHistory
+            .map(item => `Q: ${item.question}\nA: ${item.response}`)
+            .join('\n\n');
+    }
+
+    reset() {
+        this.currentQuestionIndex = 0;
+        this.transcriptHistory = [];
+        this.lastResponseTime = 0;
+    }
+
+    // Utility methods for fallback analysis
+    calculateConfidenceScore(transcript) {
+        const words = transcript.toLowerCase().split(/\s+/);
+        const confidenceWords = ['confident', 'sure', 'certainly', 'definitely'];
+        const hesitationWords = ['maybe', 'perhaps', 'um', 'uh', 'like'];
+        
+        const confidenceCount = words.filter(word => confidenceWords.includes(word)).length;
+        const hesitationCount = words.filter(word => hesitationWords.includes(word)).length;
+        
+        return Math.max(0.1, Math.min(1, (confidenceCount - hesitationCount) / words.length + 0.5));
+    }
+
+    calculateClarityScore(transcript) {
+        const sentences = transcript.split(/[.!?]+/).filter(Boolean);
+        const avgWordsPerSentence = transcript.split(/\s+/).length / sentences.length;
+        return Math.max(0.1, Math.min(1, (avgWordsPerSentence >= 8 && avgWordsPerSentence <= 20) ? 0.8 : 0.4));
+    }
+
+    detectTechnicalContent(transcript) {
+        const technicalWords = ['code', 'programming', 'software', 'development', 'technical', 'algorithm'];
+        const words = transcript.toLowerCase().split(/\s+/);
+        const technicalCount = words.filter(word => technicalWords.includes(word)).length;
+        return Math.min(1, technicalCount / 10);
+    }
+
+    detectLeadershipTraits(transcript) {
+        const leadershipWords = ['lead', 'team', 'managed', 'organized', 'coordinated'];
+        const words = transcript.toLowerCase().split(/\s+/);
+        const leadershipCount = words.filter(word => leadershipWords.some(lWord => word.includes(lWord))).length;
+        return Math.min(1, leadershipCount / 5);
+    }
+}
+
+// Create and export singleton instance
+const openaiService = new OpenAIService();
+export default openaiService;
+}
+
+filepath:///src\js\services\videoAnalysisService.js /// /// ///
+file code{
+import * as faceapi from 'face-api.js';
+
+class VideoAnalysisService {
+    constructor() {
+        this.isModelLoaded = false;
+        this.analysisData = {
+            expressions: [],
+            headPose: [],
+            eyeMovements: [],
+            suspiciousActivities: []
+        };
+        this.modelBasePath = '/models';
+        this.consecutiveFailures = 0;
+        this.maxFailures = 3;
+    }
+
+    async loadModels() {
+        try {
+            const modelUrls = {
+                tinyFaceDetector: `${this.modelBasePath}/tiny_face_detector_model-weights_manifest.json`,
+                faceLandmark68Net: `${this.modelBasePath}/face_landmark_68_model-weights_manifest.json`,
+                faceRecognitionNet: `${this.modelBasePath}/face_recognition_model-weights_manifest.json`,
+                faceExpressionNet: `${this.modelBasePath}/face_expression_model-weights_manifest.json`
+            };
+
+            // Verify model files exist before loading
+            await this.verifyModels(modelUrls);
+
+            // Load models in parallel
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri(this.modelBasePath),
+                faceapi.nets.faceLandmark68Net.loadFromUri(this.modelBasePath),
+                faceapi.nets.faceRecognitionNet.loadFromUri(this.modelBasePath),
+                faceapi.nets.faceExpressionNet.loadFromUri(this.modelBasePath)
+            ]);
+
+            this.isModelLoaded = true;
+            console.log('Face analysis models loaded successfully');
+            return true;
+        } catch (error) {
+            console.error('Error loading face analysis models:', error);
+            throw new Error('Failed to load face analysis models. Please check your internet connection and try again.');
+        }
+    }
+
+    async verifyModels(modelUrls) {
+        const verifyPromises = Object.entries(modelUrls).map(async ([name, url]) => {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to load ${name} model`);
+            }
+            return true;
+        });
+
+        await Promise.all(verifyPromises);
+    }
+
+    async analyzeFacialBehavior(videoElement, onFrame) {
+        if (!this.isModelLoaded) {
+            throw new Error('Face analysis models not loaded');
+        }
+
+        if (!videoElement || videoElement.readyState !== 4) {
+            throw new Error('Video element not ready');
+        }
+
+        try {
+            const analysis = {
+                lookAway: 0,
+                suspiciousMovements: 0,
+                expressionChanges: 0,
+                totalFrames: 0
+            };
+
+            const detections = await faceapi
+                .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceExpressions();
+
+            if (detections.length === 0) {
+                this.consecutiveFailures++;
+                if (this.consecutiveFailures >= this.maxFailures) {
+                    throw new Error('No face detected in multiple consecutive frames');
+                }
+                return this.getEmptyAnalysis();
+            }
+
+            this.consecutiveFailures = 0;
+            const detection = detections[0];
+            
+            // Process facial data
+            const processedData = this.processFacialData(detection);
+            Object.assign(analysis, processedData);
+
+            // Store analysis data
+            this.storeAnalysisData(processedData);
+
+            analysis.totalFrames++;
+            
+            if (onFrame && typeof onFrame === 'function') {
+                onFrame(analysis);
+            }
+
+            return analysis;
+        } catch (error) {
+            console.error('Frame analysis error:', error);
+            return this.getEmptyAnalysis();
+        }
+    }
+
+    processFacialData(detection) {
+        const landmarks = detection.landmarks;
+        const expressions = detection.expressions;
+        const leftEye = landmarks.getLeftEye();
+        const rightEye = landmarks.getRightEye();
+        
+        return {
+            lookingAway: this.isLookingAway(leftEye, rightEye),
+            suspiciousMovement: this.detectSuspiciousMovement(landmarks),
+            expressionChange: this.detectExpressionChange(expressions),
+            confidence: this.calculateConfidence(detection)
+        };
+    }
+
+    isLookingAway(leftEye, rightEye) {
+        const eyeCenter = {
+            x: (leftEye[0].x + rightEye[3].x) / 2,
+            y: (leftEye[0].y + rightEye[3].y) / 2
+        };
+        
+        const threshold = 0.2;
+        return Math.abs(eyeCenter.x) > threshold || Math.abs(eyeCenter.y) > threshold;
+    }
+
+    detectSuspiciousMovement(landmarks) {
+        const nose = landmarks.getNose();
+        const movement = this.calculateMovement(nose[0]);
+        const threshold = 20;
+        return movement > threshold;
+    }
+
+    detectExpressionChange(expressions) {
+        if (this.analysisData.expressions.length === 0) {
+            this.analysisData.expressions.push(expressions);
+            return false;
+        }
+
+        const previousExpressions = this.analysisData.expressions[this.analysisData.expressions.length - 1];
+        const threshold = 0.3;
+
+        for (const expression in expressions) {
+            if (Math.abs(expressions[expression] - previousExpressions[expression]) > threshold) {
+                return true;
+            }
+        }
+
+        this.analysisData.expressions.push(expressions);
+        if (this.analysisData.expressions.length > 30) {
+            this.analysisData.expressions.shift();
+        }
+
+        return false;
+    }
+
+    calculateConfidence(detection) {
+        const expressionConfidence = Math.max(...Object.values(detection.expressions));
+        const landmarkConfidence = detection.landmarks.positions.reduce((acc, pos) => 
+            acc + (pos.confidence || 1), 0) / detection.landmarks.positions.length;
+        
+        return (expressionConfidence + landmarkConfidence) / 2;
+    }
+
+    getEmptyAnalysis() {
+        return {
+            lookAway: 0,
+            suspiciousMovements: 0,
+            expressionChanges: 0,
+            totalFrames: 1,
+            confidence: 0
+        };
+    }
+
+    generateAnalysisReport(analysisData) {
+        return {
+            suspicionScore: this.calculateSuspicionScore(analysisData),
+            details: this.generateDetailsReport(analysisData),
+            flags: this.generateWarningFlags(analysisData),
+            recommendations: this.generateRecommendations(analysisData)
+        };
+    }
+
+    calculateSuspicionScore(analysisData) {
+        if (!analysisData || !analysisData.totalFrames) return 0;
+
+        const weights = {
+            lookAway: 0.4,
+            suspiciousMovements: 0.3,
+            expressionChanges: 0.3
+        };
+
+        return Math.min(100, Math.round(
+            (weights.lookAway * (analysisData.lookAway / analysisData.totalFrames) +
+            weights.suspiciousMovements * (analysisData.suspiciousMovements / analysisData.totalFrames) +
+            weights.expressionChanges * (analysisData.expressionChanges / analysisData.totalFrames)) * 100
+        ));
+    }
+
+    reset() {
+        this.analysisData = {
+            expressions: [],
+            headPose: [],
+            eyeMovements: [],
+            suspiciousActivities: []
+        };
+        this.consecutiveFailures = 0;
+    }
+
+    // Helper methods for data storage and retrieval
+    storeAnalysisData(data) {
+        // Implement storage logic here if needed
+        // This could be used for generating more detailed reports
+    }
+
+    // Additional helper methods as needed
+    calculateMovement(point) {
+        if (!this.lastPoint) {
+            this.lastPoint = point;
+            return 0;
+        }
+
+        const movement = Math.sqrt(
+            Math.pow(point.x - this.lastPoint.x, 2) + 
+            Math.pow(point.y - this.lastPoint.y, 2)
+        );
+
+        this.lastPoint = point;
+        return movement;
+    }
+}
+
+export default VideoAnalysisService;
+}
+
+filepath:///src\js\services\voiceAnalysisService.js /// /// ///
+file code{
+// src/js/services/voiceAnalysisService.js
+class VoiceAnalysisService {
+    constructor() {
+        this.audioContext = null;
+        this.analyzer = null;
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.isRecording = false;
+        this.transcript = '';
+        this.onTranscriptUpdate = null;
+    }
+
+    async initialize() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyzer = this.audioContext.createAnalyser();
+            this.analyzer.fftSize = 2048;
+
+            if (!('webkitSpeechRecognition' in window)) {
+                throw new Error('Speech recognition not supported in this browser');
+            }
+
+            this.recognition = new webkitSpeechRecognition();
+            this.setupSpeechRecognition();
+            return true;
+        } catch (error) {
+            console.error('Voice analysis initialization error:', error);
+            throw error;
+        }
+    }
+
+    setupSpeechRecognition() {
+        this.recognition.continuous = true;
+        this.recognition.interimResults = true;
+        this.recognition.lang = 'en-US';
+
+        this.recognition.onresult = (event) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + ' ';
+                    this.transcript += transcript + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            if (this.onTranscriptUpdate) {
+                this.onTranscriptUpdate({
+                    final: this.transcript,
+                    interim: interimTranscript,
+                    analysis: this.analyzeVoiceMetrics()
+                });
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+        };
+
+        this.recognition.onend = () => {
+            if (this.isRecording) {
+                this.recognition.start();
+            }
+        };
+    }
+
+    async startRecording(stream) {
+        if (!this.audioContext) {
+            await this.initialize();
+        }
+
+        const audioTrack = stream.getAudioTracks()[0];
+        const source = this.audioContext.createMediaStreamSource(new MediaStream([audioTrack]));
+        source.connect(this.analyzer);
+
+        this.mediaRecorder = new MediaRecorder(stream, {
+            mimeType: 'audio/webm',
+            audioBitsPerSecond: 128000
+        });
+
+        this.mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                this.recordedChunks.push(event.data);
+            }
+        };
+
+        this.mediaRecorder.start(1000);
+        this.recognition.start();
+        this.isRecording = true;
+
+        this.startVolumeMonitoring();
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+        }
+        this.recognition.stop();
+        this.isRecording = false;
+
+        const audioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+        this.recordedChunks = [];
+        return {
+            audio: audioBlob,
+            transcript: this.transcript,
+            analysis: this.analyzeVoiceMetrics()
+        };
+    }
+
+    startVolumeMonitoring() {
+        const bufferLength = this.analyzer.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+
+        const updateVolume = () => {
+            if (!this.isRecording) return;
+
+            this.analyzer.getFloatTimeDomainData(dataArray);
+            const volume = this.calculateVolume(dataArray);
+            const noiseLevel = this.calculateNoiseLevel(dataArray);
+            const clarity = this.calculateClarity(dataArray);
+
+            if (this.onVolumeUpdate) {
+                this.onVolumeUpdate({
+                    volume,
+                    noiseLevel,
+                    clarity
+                });
+            }
+
+            requestAnimationFrame(updateVolume);
+        };
+
+        updateVolume();
+    }
+
+    calculateVolume(dataArray) {
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += Math.abs(dataArray[i]);
+        }
+        return (sum / dataArray.length) * 100;
+    }
+
+    calculateNoiseLevel(dataArray) {
+        let sum = 0;
+        let sumSquares = 0;
+
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+            sumSquares += dataArray[i] * dataArray[i];
+        }
+
+        const mean = sum / dataArray.length;
+        const variance = (sumSquares / dataArray.length) - (mean * mean);
+        return Math.sqrt(variance) * 100;
+    }
+
+    calculateClarity(dataArray) {
+        const frequencies = new Float32Array(this.analyzer.frequencyBinCount);
+        this.analyzer.getFloatFrequencyData(frequencies);
+        
+        let signalPower = 0;
+        let noisePower = 0;
+        
+        frequencies.forEach((frequency, i) => {
+            const power = Math.pow(10, frequency / 10);
+            if (i < frequencies.length * 0.1 || i > frequencies.length * 0.9) {
+                noisePower += power;
+            } else {
+                signalPower += power;
+            }
+        });
+        
+        return (signalPower / (noisePower + 1)) * 100;
+    }
+
+    analyzeVoiceMetrics() {
+        return {
+            duration: this.getDuration(),
+            speakingPace: this.calculateSpeakingPace(),
+            clarity: this.getAverageClarity(),
+            confidence: this.calculateConfidence()
+        };
+    }
+
+    getDuration() {
+        return this.mediaRecorder ? this.mediaRecorder.time : 0;
+    }
+
+    calculateSpeakingPace() {
+        const words = this.transcript.trim().split(/\s+/).length;
+        const minutes = this.getDuration() / 60000;
+        return words / Math.max(minutes, 1);
+    }
+
+    // src/js/services/voiceAnalysisService.js (continued from previous code)
+    getAverageClarity() {
+        const bufferLength = this.analyzer.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+        this.analyzer.getFloatTimeDomainData(dataArray);
+        return this.calculateClarity(dataArray);
+    }
+
+    calculateConfidence() {
+        if (!this.transcript) return 0;
+
+        // Calculate confidence based on multiple factors
+        const metrics = {
+            volumeScore: this.getVolumeScore(),
+            paceScore: this.getPaceScore(),
+            clarityScore: this.getAverageClarity() / 100,
+            fillerWordsScore: this.getFillerWordsScore(),
+            pausePatternScore: this.getPausePatternScore()
+        };
+
+        // Weighted average of all metrics
+        const weights = {
+            volumeScore: 0.2,
+            paceScore: 0.2,
+            clarityScore: 0.3,
+            fillerWordsScore: 0.15,
+            pausePatternScore: 0.15
+        };
+
+        return Object.entries(metrics).reduce((total, [key, value]) => {
+            return total + (value * weights[key]);
+        }, 0);
+    }
+
+    getVolumeScore() {
+        const bufferLength = this.analyzer.frequencyBinCount;
+        const dataArray = new Float32Array(bufferLength);
+        this.analyzer.getFloatTimeDomainData(dataArray);
+        const volume = this.calculateVolume(dataArray);
+        
+        // Normalize volume score (optimal range: 40-80)
+        if (volume < 20) return volume / 20;
+        if (volume > 90) return 1 - ((volume - 90) / 10);
+        if (volume >= 40 && volume <= 80) return 1;
+        return 0.7;
+    }
+
+    getPaceScore() {
+        const wordsPerMinute = this.calculateSpeakingPace();
+        // Optimal speaking pace: 120-160 words per minute
+        if (wordsPerMinute < 80) return 0.5;
+        if (wordsPerMinute > 200) return 0.6;
+        if (wordsPerMinute >= 120 && wordsPerMinute <= 160) return 1;
+        return 0.8;
+    }
+
+    getFillerWordsScore() {
+        const fillerWords = ['um', 'uh', 'like', 'you know', 'sort of', 'kind of'];
+        const words = this.transcript.toLowerCase().split(/\s+/);
+        const fillerCount = words.filter(word => fillerWords.includes(word)).length;
+        const fillerRatio = fillerCount / words.length;
+        return Math.max(0, 1 - (fillerRatio * 10));
+    }
+
+    getPausePatternScore() {
+        const text = this.transcript;
+        const sentences = text.split(/[.!?]+/).filter(Boolean);
+        if (sentences.length < 2) return 0.5;
+
+        // Analyze pause patterns using punctuation and sentence length
+        let score = 0;
+        let previousLength = 0;
+
+        for (const sentence of sentences) {
+            const words = sentence.trim().split(/\s+/).length;
+            
+            // Good variation in sentence length
+            if (previousLength > 0) {
+                const variation = Math.abs(words - previousLength) / Math.max(words, previousLength);
+                score += variation <= 0.5 ? 0.5 : 0.3;
+            }
+
+            // Natural sentence length (5-15 words is optimal)
+            score += (words >= 5 && words <= 15) ? 0.5 : 0.3;
+
+            previousLength = words;
+        }
+
+        return score / sentences.length;
+    }
+
+    setTranscriptUpdateCallback(callback) {
+        this.onTranscriptUpdate = callback;
+    }
+
+    setVolumeUpdateCallback(callback) {
+        this.onVolumeUpdate = callback;
+    }
+
+    reset() {
+        this.transcript = '';
+        this.recordedChunks = [];
+        if (this.mediaRecorder) {
+            this.mediaRecorder.stop();
+        }
+        if (this.recognition) {
+            this.recognition.stop();
+        }
+        this.isRecording = false;
+    }
+
+    async getAudioBlob() {
+        if (this.recordedChunks.length === 0) {
+            return null;
+        }
+        return new Blob(this.recordedChunks, { type: 'audio/webm' });
+    }
+
+    async exportTranscript() {
+        if (!this.transcript) {
+            throw new Error('No transcript available');
+        }
+
+        const analysis = this.analyzeVoiceMetrics();
+        const exportData = {
+            transcript: this.transcript,
+            metrics: {
+                duration: analysis.duration,
+                wordsPerMinute: analysis.speakingPace,
+                clarity: analysis.clarity,
+                confidence: analysis.confidence
+            },
+            timestamp: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        return blob;
+    }
+}
+
+window.VoiceAnalysisService = new VoiceAnalysisService();
+}
+
+filepath:///src\server\server.js /// /// ///
+file code{
+// src/server/server.js
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const path = require('path');
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname, '../..')));
+
+// Root route with detailed logging
+app.get('/', (req, res) => {
+    console.log('Accessing root route');
+    const filePath = path.join(__dirname, '../..', 'index.html');
+    console.log('Attempting to serve:', filePath);
+    res.sendFile(filePath);
+});
+
+// Interview routes with logging
+app.get('/interviews', (req, res) => {
+    console.log('Accessing interviews route');
+    const filePath = path.join(__dirname, '../..', 'interviews.html');
+    console.log('Attempting to serve:', filePath);
+    res.sendFile(filePath);
+});
+
+// Error handling middleware with detailed logging
+app.use((err, req, res, next) => {
+    console.error('Server Error:', err);
+    console.error('Stack:', err.stack);
+    res.status(500).send('Something broke! Check server logs for details.');
+});
+
+// Start server with enhanced logging
+app.listen(PORT, () => {
+    console.log('=================================');
+    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Static files served from: ${path.join(__dirname, '../..')}`);
+    console.log('=================================');
+});
+}
+

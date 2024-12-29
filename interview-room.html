@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Interview Session</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+        }
+
+        .suspicious-alert {
+            background-color: rgba(220, 53, 69, 0.9);
+            border: 2px solid #dc3545;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .status-warning {
+            background-color: #ffc107;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .debug-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        .debug-panel.visible {
+            display: block;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .video-section {
+            position: sticky;
+            top: 20px;
+        }
+
+        .interview-section {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-section {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        #videoElement {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 8px;
+        }
+
+        #audioMeter {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        #audioMeterFill {
+            height: 100%;
+            background: #28a745;
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+
+        .timer {
+            font-family: monospace;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .participants-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .participant {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .participant-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background-color: #28a745;
+        }
+
+        .status-offline {
+            background-color: #dc3545;
+        }
+
+        .waiting-room {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .waiting-content {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 1rem;
+            background: white;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .device-check {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            background: white;
+            margin-bottom: 0.5rem;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .button-row button {
+            min-width: 120px;
+        }
+
+        .alert-float {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .alert-float.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .trait-score {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .analysis-card {
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 15px;
+        }
+
+        .flag-item {
+            background: #f8f9fa;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .qa-pair {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .current-question {
+            transition: all 0.3s ease-in-out;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(13, 110, 253, 0.05);
+            border-left: 4px solid #0d6efd;
+        }
+
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .video-section {
+                position: relative;
+            }
+
+            .participants-panel {
+                position: static;
+                margin-bottom: 1rem;
+                background: #343a40;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Waiting Room -->
+    <div class="waiting-room" id="waitingRoom">
+        <div class="waiting-content">
+            <div class="mb-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <h3>Waiting for Interviewer</h3>
+            <p class="text-muted">Please wait while the interviewer starts the session...</p>
+            <div class="device-check mt-4">
+                <h5>Device Check</h5>
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                    <div>
+                        <i class="bi bi-camera-video"></i>
+                        <span id="cameraStatus">Checking...</span>
+                    </div>
+                    <div>
+                        <i class="bi bi-mic"></i>
+                        <span id="micStatus">Checking...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Header with session info -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>
+                            <i class="bi bi-camera-video me-2"></i>
+                            Interview Session
+                            <span id="sessionStatus" class="badge bg-secondary ms-2">Not Started</span>
+                        </h2>
+                        <p class="text-muted mb-0" id="interviewInfo">Loading interview details...</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="timer h4 mb-0" id="timer">00:00</div>
+                        <small class="text-muted" id="connectionStatus">Connecting...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <!-- Video Section -->
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="videoElement" autoplay playsinline></video>
+                    <div id="liveAnalysis" class="analysis-overlay"></div>
+                    <div class="participants-panel" id="participantsPanel">
+                        <h6 class="mb-3">Participants</h6>
+                        <div id="participantsList">
+                            <!-- Participants will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls-section mt-3">
+                    <div class="d-flex justify-content-center gap-2">
+                        <button id="micToggle" class="btn btn-outline-primary">
+                            <i class="bi bi-mic"></i>
+                        </button>
+                        <button id="cameraToggle" class="btn btn-outline-primary">
+                            <i class="bi bi-camera-video"></i>
+                        </button>
+                        <button id="startButton" class="btn btn-primary" disabled>
+                            <i class="bi bi-play-fill"></i> Start Interview
+                        </button>
+                        <button id="endButton" class="btn btn-danger" disabled>
+                            <i class="bi bi-stop-fill"></i> End Interview
+                        </button>
+                        <button id="downloadBtn" class="btn btn-outline-primary" disabled>
+                            <i class="bi bi-download"></i> Download Transcript
+                        </button>
+                    </div>
+                    
+                    <div id="audioMeter" class="mt-3">
+                        <div id="audioMeterFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview Content Section -->
+            <div class="interview-section">
+                <div id="openaiAnalysis" class="p-3">
+                    <!-- OpenAI analysis will be displayed here -->
+                </div>
+                <div id="debugPanel" class="debug-panel mx-3 mb-3">
+                    <h5>Debug Information</h5>
+                    <pre id="debugInfo"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="src/js/services/config.js"></script>
+    <script src="src/js/services/openaiService.js"></script>
+    <script src="src/js/services/authService.js"></script>
+    <script type="module">
+        import { InterviewSession } from './src/js/services/interviewSession.js';
+        import authService from './src/js/services/authService.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get interview ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const interviewId = urlParams.get('id');
+            
+            if (!interviewId) {
+                window.location.href = '/interviews.html';
+                return;
+            }
+
+            // Initialize session
+            const session = new InterviewSession(interviewId);
+            await session.initialize();
+
+            // Check if user is interviewer or candidate
+            const isInterviewer = authService.isAuthenticated() && (
+                authService.hasRole('interviewer') || authService.hasRole('admin')
+            );
+            const candidateToken = sessionStorage.getItem('interviewToken');
+            
+            if (!isInterviewer && !candidateToken) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Show/hide controls based on role
+            document.getElementById('startButton').style.display = isInterviewer ? 'block' : 'none';
+            document.getElementById('downloadBtn').style.display = isInterviewer ? 'block' : 'none';
+
+            // Handle device permissions
+            try {
+                await session.checkDevicePermissions();
+                document.getElementById('cameraStatus').textContent = '✓ Camera Ready';
+                document.getElementById('micStatus').textContent = '✓ Microphone Ready';
+            } catch (error) {
+                document.getElementById('cameraStatus').textContent = '⚠️ Camera Error';
+                document.getElementById('micStatus').textContent = '⚠️ Microphone Error';
+                console.error('Device permission error:', error);
+            }
+
+            // Set up event listeners
+            document.getElementById('micToggle').addEventListener('click', () => session.toggleAudio());
+            document.getElementById('cameraToggle').addEventListener('click', () => session.toggleVideo());
+            document.getElementById('startButton').addEventListener('click', () => session.startInterview());
+            document.getElementById('endButton').addEventListener('click', () => session.endInterview());
+            document.getElementById('downloadBtn').addEventListener('click', () => session.downloadTranscript());
+
+            // Handle session events
+            session.on('stateChange', (state) => {
+                document.getElementById('sessionStatus').textContent = state;
+                if (state === 'started') {
+                    document.getElementById('waitingRoom').style.display = 'none';
+                }
+            });
+
+            session.on('participantJoined', (participant) => {
+                // Add participant to the list
+                const participantDiv = document.createElement('div');
+                participantDiv.className = 'participant';
+                participantDiv.innerHTML = `
+                    <div class="participant-status status-online"></div>
+                    <span>${participant.name} (${participant.role})</span>
+                `;
+                document.getElementById('participantsList').appendChild(participantDiv);
+            });
+
+            session.on('participantLeft', (participantId) => {
+                // Remove participant from the list
+                const element = document.querySelector(`[data-participant-id="${participantId}"]`);
+                if (element) element.remove();
+            });
+
+            // Start session initialization
+            await session.connect();
+        });
+    </script>
+</body>
+</html>

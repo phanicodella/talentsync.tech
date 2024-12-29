@@ -1,392 +1,312 @@
 // src/js/services/openaiService.js
+import configService from './configService.js';
+import authService from './authService.js';
+
 class OpenAIService {
-    constructor(apiKey) {
-        if (!window.config) {
-            console.error('Config not loaded');
-            return;
-        }
-        this.apiKey = apiKey || window.config.OPENAI_API_KEY;
-        this.baseURL = `${window.config.API_BASE_URL}/api`;
-        this.currentQuestionIndex = 0;
-        this.transcriptHistory = [];
-        this.lastResponseTime = 0;
-        this.minResponseInterval = 3000;
-        
-        this.questions = [
-            {
-                category: "Introduction",
-                question: "Please introduce yourself and tell us about your background."
-            },
-            {
-                category: "Experience",
-                question: "What relevant experience do you have for this position?"
-            },
-            {
-                category: "Technical Skills",
-                question: "Could you describe your technical skills and how they align with this role?"
-            },
-            {
-                category: "Problem Solving",
-                question: "Tell me about a challenging problem you solved in your previous work."
-            },
-            {
-                category: "Team Work",
-                question: "How do you approach working in a team environment?"
-            },
-            {
-                category: "Leadership",
-                question: "Have you ever led a project or team? Please describe your experience."
-            },
-            {
-                category: "Goals",
-                question: "What are your career goals and how does this position fit into them?"
-            },
-            {
-                category: "Closing",
-                question: "Do you have any questions for us?"
-            }
-        ];
+    constructor() {
+        this.baseURL = configService.get('API_BASE_URL', 'http://localhost:5000');
+        this.apiEndpoint = `${this.baseURL}/api/openai`;
+        this.questionCache = new Map();
     }
 
-    getCurrentQuestion() {
-        if (this.currentQuestionIndex < this.questions.length) {
-            return {
-                ...this.questions[this.currentQuestionIndex],
-                index: this.currentQuestionIndex + 1,
-                total: this.questions.length
-            };
-        }
-        return this.questions[this.questions.length - 1];
-    }
-
-    canMoveToNextQuestion(response) {
-        const now = Date.now();
-        const timeElapsed = now - this.lastResponseTime;
-        
-        // Check if enough time has passed and response is substantial
-        const isValidResponse = response && response.trim().length >= 10;
-        const hasEnoughTimeElapsed = timeElapsed > this.minResponseInterval;
-        
-        return isValidResponse && hasEnoughTimeElapsed;
-    }
-
-    nextQuestion(currentResponse) {
-        if (!this.canMoveToNextQuestion(currentResponse)) {
-            return this.getCurrentQuestion();
-        }
-
-        if (currentResponse && currentResponse.trim()) {
-            this.addToTranscriptHistory(currentResponse);
-        }
-
-        if (this.currentQuestionIndex < this.questions.length - 1) {
-            this.currentQuestionIndex++;
-            this.lastResponseTime = Date.now();
-        }
-        
-        return this.getCurrentQuestion();
-    }
-
-    resetQuestions() {
-        this.currentQuestionIndex = 0;
-        this.transcriptHistory = [];
-        this.lastResponseTime = 0;
-    }
-
-    addToTranscriptHistory(response) {
-        const currentQuestion = this.getCurrentQuestion();
-        if (!this.transcriptHistory.some(item => 
-            item.question === currentQuestion.question && 
-            item.response === response.trim()
-        )) {
-            this.transcriptHistory.push({
-                question: currentQuestion.question,
-                response: response.trim(),
-                category: currentQuestion.category,
-                timestamp: new Date().toISOString()
-            });
-        }
-    }
-
-    getFormattedTranscript() {
-        return this.transcriptHistory
-            .map(item => `Q: ${item.question}\nA: ${item.response}`)
-            .join('\n\n');
-    }
-
-    async analyzeInterview(transcript) {
+    // Analyze interview transcript
+    async analyzeInterview(transcript, options = {}) {
         try {
-            console.log('Analyzing transcript:', transcript);
-            if (!transcript || transcript.trim().length === 0) {
-                throw new Error('No transcript provided for analysis');
-            }
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch(`${this.apiEndpoint}/analyze`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4",
-                    messages: [{
-                        role: 'system',
-                        content: `You are an expert interview assessor. Analyze this interview transcript for a job interview. 
-                        Evaluate the candidate's responses and provide structured insights about their performance.
-                        Parse the responses carefully and assess:
-                        - Level of engagement and interest
-                        - Quality and depth of answers
-                        - Communication style and clarity
-                        - Professional attitude
-                        - Technical competency signals
-                        
-                        Return your analysis in this exact JSON format:
-                        {
-                            "key_traits": {
-                                "confidence": <number between 0 and 1>,
-                                "clarity": <number between 0 and 1>,
-                                "technical_knowledge": <number between 0 and 1>,
-                                "communication": <number between 0 and 1>,
-                                "leadership": <number between 0 and 1>
-                            },
-                            "behavioral_flags": [
-                                <list of observed behaviors>,
-                                <minimum 3 specific observations>
-                            ],
-                            "risk_factors": [
-                                <list of concerns>,
-                                <minimum 2 specific risks>
-                            ],
-                            "recommendations": [
-                                <list of actionable recommendations>,
-                                <minimum 3 specific recommendations>
-                            ]
-                        }
-                        
-                        Score traits based on evidence in responses. Be specific in your observations.`
-                    }, {
-                        role: 'user',
-                        content: transcript
-                    }],
-                    temperature: 0.4,
-                    max_tokens: 1000
+                headers: this.getHeaders(),
+                body: JSON.stringify({ 
+                    transcript, 
+                    ...options 
                 })
             });
 
-            if (!response.ok) {
-                console.error('API Response not OK:', response.status);
-                throw new Error(`API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log('Raw OpenAI Response:', data);
-
-            if (!data.choices?.[0]?.message?.content) {
-                throw new Error('Invalid API response structure');
-            }
-
-            let analysis;
-            try {
-                analysis = JSON.parse(data.choices[0].message.content);
-                
-                if (!this.validateAnalysisStructure(analysis)) {
-                    throw new Error('Invalid analysis structure');
-                }
-            } catch (parseError) {
-                console.error('Parse error:', parseError);
-                throw new Error('Failed to parse analysis response');
-            }
-
-            if (this.detectDisinterest(transcript)) {
-                analysis.behavioral_flags.unshift('Shows significant disinterest');
-                analysis.risk_factors.unshift('Candidate appears uncommitted to the process');
-                analysis.key_traits.confidence = Math.min(analysis.key_traits.confidence, 0.3);
-            }
-
-            if (this.detectNegativeAttitude(transcript)) {
-                analysis.behavioral_flags.unshift('Displays negative attitude');
-                analysis.risk_factors.unshift('Potential cultural fit concerns');
-                analysis.key_traits.communication = Math.min(analysis.key_traits.communication, 0.3);
-            }
-
-            return analysis;
-
+            return await this.handleResponse(response);
         } catch (error) {
-            console.error('Analysis error:', error);
-            return this.generateResponseBasedAnalysis(transcript);
+            console.error('Interview analysis error:', error);
+            return this.generateFallbackAnalysis(transcript);
         }
     }
 
-    validateAnalysisStructure(analysis) {
-        return (
-            analysis &&
-            analysis.key_traits &&
-            typeof analysis.key_traits.confidence === 'number' &&
-            typeof analysis.key_traits.clarity === 'number' &&
-            typeof analysis.key_traits.technical_knowledge === 'number' &&
-            typeof analysis.key_traits.communication === 'number' &&
-            typeof analysis.key_traits.leadership === 'number' &&
-            Array.isArray(analysis.behavioral_flags) &&
-            Array.isArray(analysis.risk_factors) &&
-            Array.isArray(analysis.recommendations)
-        );
+    // Generate follow-up questions
+    async generateFollowUpQuestions(transcript, type = 'technical', count = 3) {
+        try {
+            const response = await fetch(`${this.apiEndpoint}/follow-up`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({ 
+                    transcript, 
+                    type, 
+                    count 
+                })
+            });
+
+            return await this.handleResponse(response);
+        } catch (error) {
+            console.error('Follow-up questions error:', error);
+            return this.generateFallbackQuestions(type, count);
+        }
     }
 
-    detectDisinterest(transcript) {
-        const disinterestPatterns = [
-            /don't (want|care|like)/i,
-            /not interested/i,
-            /this is ridiculous/i,
-            /no[t]? (going|doing)/i
-        ];
-        return disinterestPatterns.some(pattern => pattern.test(transcript));
+    // Analyze individual response
+    async analyzeResponse(question, response, type = 'technical') {
+        try {
+            const apiResponse = await fetch(`${this.apiEndpoint}/response-analysis`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({ 
+                    question, 
+                    response, 
+                    type 
+                })
+            });
+
+            return await this.handleResponse(apiResponse);
+        } catch (error) {
+            console.error('Response analysis error:', error);
+            return this.generateFallbackResponseAnalysis(question, response);
+        }
     }
 
-    detectNegativeAttitude(transcript) {
-        const negativePatterns = [
-            /ridiculous/i,
-            /stupid/i,
-            /waste/i,
-            /don't want to/i,
-            /no[t]? (going|doing)/i
-        ];
-        return negativePatterns.some(pattern => pattern.test(transcript));
+    // Get headers for API requests
+    getHeaders() {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        const token = authService.getToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        return headers;
     }
 
-    generateResponseBasedAnalysis(transcript) {
-        const responseLines = transcript.split('\n');
-        const hasResponses = responseLines.length > 0;
-        
-        const shortResponses = responseLines.filter(line => 
-            line.includes('A:') && line.split('A:')[1].trim().split(' ').length < 5
-        ).length;
-        
-        const negativeResponses = responseLines.filter(line =>
-            line.includes('A:') && (
-                line.toLowerCase().includes('no') ||
-                line.toLowerCase().includes('don\'t') ||
-                line.toLowerCase().includes('not')
-            )
-        ).length;
+    // Handle API response
+    async handleResponse(response) {
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'OpenAI service request failed');
+        }
 
-        const responseRatio = hasResponses ? negativeResponses / responseLines.length : 0;
-        const engagementScore = Math.max(0.1, 1 - (shortResponses / responseLines.length));
-        
+        return response.json();
+    }
+
+    // Fallback methods for when API fails
+
+    generateFallbackAnalysis(transcript) {
+        const words = transcript.split(/\s+/).length;
+        const sentences = transcript.split(/[.!?]+/).length;
+
         return {
             key_traits: {
-                confidence: Math.max(0.1, 0.5 - (responseRatio * 0.3)),
-                clarity: Math.max(0.1, engagementScore),
-                technical_knowledge: this.detectTechnicalContent(transcript) ? 0.6 : 0.3,
-                communication: Math.max(0.1, engagementScore - (responseRatio * 0.4)),
-                leadership: Math.max(0.1, 0.4 - (responseRatio * 0.2))
+                confidence: this.calculateConfidence(transcript),
+                clarity: this.calculateClarity(transcript),
+                technical_knowledge: this.detectTechnicalContent(transcript),
+                communication: sentences > 0 ? 0.7 : 0.4,
+                leadership: this.detectLeadershipTraits(transcript)
             },
             behavioral_flags: [
-                negativeResponses > 2 ? 'Shows resistance to questions' : 'Limited engagement',
-                shortResponses > 2 ? 'Provides minimal responses' : 'Responses lack detail',
-                'Interview engagement below expectations'
+                'No detailed analysis available',
+                'Recommend manual review'
             ],
             risk_factors: [
-                responseRatio > 0.3 ? 'High proportion of negative responses' : 'Limited response quality',
-                'Candidate may not be fully interested in the position'
+                'Limited data for comprehensive analysis'
             ],
             recommendations: [
-                'Consider conducting a follow-up interview with different format',
-                'Probe for specific examples of past experience',
-                'Assess candidate motivation and interest level'
+                'Conduct a manual interview review',
+                'Consider additional assessment methods'
             ]
         };
     }
 
-    detectTechnicalContent(transcript) {
-        const technicalWords = [
-            'code', 'programming', 'software', 'development', 'technical',
-            'engineer', 'system', 'database', 'algorithm', 'analysis'
-        ];
-        const technicalPattern = new RegExp(technicalWords.join('|'), 'i');
-        return technicalPattern.test(transcript);
+    // Continued OpenAI Service
+
+    generateFallbackQuestions(type, count) {
+        const questionTypes = {
+            technical: [
+                `'Can you describe a challenging technical problem you've solved?',
+                'What programming languages are you most comfortable with?',
+                'How do you approach learning new technologies?'`
+            ],
+            hr: [
+                'Tell me about a time you worked effectively in a team.',
+                'How do you handle workplace conflicts?',
+                'What motivates you in your professional career?'
+            ],
+            behavioral: [
+                'Describe a situation where you demonstrated leadership.',
+                'How do you handle high-pressure situations?',
+                'Give an example of a goal you achieved through persistent effort.'
+            ]
+        };
+
+        const questions = questionTypes[type] || questionTypes.behavioral;
+        return questions.slice(0, count).map(question => ({
+            question,
+            intent: 'Assess candidate skills and experience',
+            follow_ups: [],
+            key_points: ['Look for specific examples', 'Evaluate communication clarity']
+        }));
     }
 
-    async generateFollowUpQuestions(transcript) {
-        try {
-            if (!transcript || transcript.trim().length === 0) {
-                throw new Error('No transcript provided for follow-up questions');
-            }
+    generateFallbackResponseAnalysis(question, response) {
+        return {
+            score: this.calculateResponseScore(response),
+            strengths: this.identifyStrengths(response),
+            weaknesses: this.identifyWeaknesses(response),
+            communication_quality: this.assessCommunicationQuality(response),
+            key_observations: [
+                'Preliminary assessment based on limited analysis'
+            ]
+        };
+    }
 
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Utility analysis methods for fallback scenarios
+    calculateConfidence(transcript) {
+        const words = transcript.toLowerCase().split(/\s+/);
+        const confidenceWords = ['confident', 'sure', 'certainly', 'definitely'];
+        const hesitationWords = ['maybe', 'perhaps', 'um', 'uh', 'like'];
+        
+        const confidenceCount = words.filter(word => confidenceWords.includes(word)).length;
+        const hesitationCount = words.filter(word => hesitationWords.includes(word)).length;
+        
+        return Math.max(0.1, Math.min(1, (confidenceCount - hesitationCount) / words.length + 0.5));
+    }
+
+    calculateClarity(transcript) {
+        const sentences = transcript.split(/[.!?]+/).filter(Boolean);
+        const avgWordsPerSentence = transcript.split(/\s+/).length / sentences.length;
+        return Math.max(0.1, Math.min(1, (avgWordsPerSentence >= 8 && avgWordsPerSentence <= 20) ? 0.8 : 0.4));
+    }
+
+    detectTechnicalContent(transcript) {
+        const technicalWords = ['code', 'programming', 'software', 'development', 'technical', 'algorithm'];
+        const words = transcript.toLowerCase().split(/\s+/);
+        const technicalCount = words.filter(word => technicalWords.includes(word)).length;
+        return Math.min(1, technicalCount / 10);
+    }
+
+    detectLeadershipTraits(transcript) {
+        const leadershipWords = ['lead', 'team', 'managed', 'organized', 'coordinated'];
+        const words = transcript.toLowerCase().split(/\s+/);
+        const leadershipCount = words.filter(word => 
+            leadershipWords.some(lWord => word.includes(lWord))
+        ).length;
+        return Math.min(1, leadershipCount / 5);
+    }
+
+    calculateResponseScore(response) {
+        const words = response.split(/\s+/);
+        const wordCount = words.length;
+        
+        // Score based on response length and complexity
+        if (wordCount < 20) return 0.3;  // Very short response
+        if (wordCount < 50) return 0.5;  // Short response
+        if (wordCount < 100) return 0.7; // Moderate response
+        return 0.9;  // Comprehensive response
+    }
+
+    identifyStrengths(response) {
+        const strengths = [];
+        
+        // Check for specific examples
+        if (response.match(/\b(example|instance|situation)\b/i)) {
+            strengths.push('Provides concrete examples');
+        }
+
+        // Check for structured thinking
+        if (response.match(/\b(first|second|then|finally)\b/i)) {
+            strengths.push('Demonstrates structured communication');
+        }
+
+        // Check for technical language
+        if (response.match(/\b(algorithm|framework|methodology)\b/i)) {
+            strengths.push('Uses professional technical language');
+        }
+
+        return strengths;
+    }
+
+    identifyWeaknesses(response) {
+        const weaknesses = [];
+        
+        // Check for filler words
+        const fillerWords = ['um', 'like', 'you know', 'sort of'];
+        const fillerCount = fillerWords.reduce((count, word) => 
+            count + (response.toLowerCase().split(word).length - 1), 0
+        );
+        if (fillerCount > 2) {
+            weaknesses.push('Excessive use of filler words');
+        }
+
+        // Check for vague language
+        if (response.match(/\b(kind of|sort of|maybe|possibly)\b/i)) {
+            weaknesses.push('Uses vague or noncommittal language');
+        }
+
+        // Check for incomplete thoughts
+        if (response.length < 50) {
+            weaknesses.push('Provides insufficient detail');
+        }
+
+        return weaknesses;
+    }
+
+    assessCommunicationQuality(response) {
+        const metrics = {
+            clarity: this.calculateClarity(response),
+            conciseness: this.calculateResponseScore(response),
+            specificity: this.identifyStrengths(response).length > 0 ? 0.8 : 0.4,
+            professionalism: this.identifyWeaknesses(response).length === 0 ? 0.9 : 0.5
+        };
+
+        return {
+            overall_score: Object.values(metrics).reduce((a, b) => a + b, 0) / Object.keys(metrics).length,
+            details: metrics
+        };
+    }
+
+    // Validate API key (admin functionality)
+    async validateOpenAIKey(apiKey) {
+        try {
+            const response = await fetch(`${this.apiEndpoint}/validate-key`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: "gpt-4",
-                    messages: [{
-                        role: 'system',
-                        content: `Based on this interview transcript, generate exactly 3 thoughtful follow-up questions.
-                        Consider:
-                        - Areas that need clarification
-                        - Topics that could benefit from more detail
-                        - Potential concerns that should be addressed
-                        
-                        Format: Return exactly 3 questions, one per line, starting with a dash (-).`
-                    }, {
-                        role: 'user',
-                        content: transcript
-                    }],
-                    temperature: 0.7,
-                    max_tokens: 250
-                })
+                headers: this.getHeaders(),
+                body: JSON.stringify({ apiKey })
             });
 
-            const data = await response.json();
-            console.log('Follow-up questions raw response:', data);
-
-            if (!data.choices?.[0]?.message?.content) {
-                throw new Error('Invalid questions response');
-            }
-
-            const questions = data.choices[0].message.content
-                .split('\n')
-                .map(line => line.trim())
-                .filter(line => line.startsWith('-'))
-                .map(line => line.substring(1).trim())
-                .filter(q => q.length > 0);
-
-            return questions.length >= 3 ? questions.slice(0, 3) : this.generateContextBasedQuestions(transcript);
-
+            return await this.handleResponse(response);
         } catch (error) {
-            console.error('Follow-up questions error:', error);
-            return this.generateContextBasedQuestions(transcript);
+            console.error('API Key validation error:', error);
+            throw error;
         }
     }
 
-    generateContextBasedQuestions(transcript) {
-        const lowEngagement = this.detectDisinterest(transcript);
-        const negativeAttitude = this.detectNegativeAttitude(transcript);
-
-        if (lowEngagement) {
-            return [
-                'What aspects of this role would you find most interesting or challenging?',
-                'Could you help us understand what type of position you are looking for?',
-                'What would make this opportunity more appealing to you?'
-            ];
+    // Track usage of OpenAI features
+    trackUsage(feature, metadata = {}) {
+        try {
+            // Send usage data to backend for tracking
+            fetch(`${this.apiEndpoint}/usage`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({
+                    feature,
+                    timestamp: new Date().toISOString(),
+                    ...metadata
+                })
+            }).catch(console.error);
+        } catch (error) {
+            console.error('Usage tracking error:', error);
         }
+    }
 
-        if (negativeAttitude) {
-            return [
-                'What concerns do you have about this position that we could address?',
-                'How could we make this interview process more comfortable for you?',
-                'What would you like to know more about regarding this opportunity?'
-            ];
-        }
-
-        return [
-            'Could you share more specific examples from your experience?',
-            'How do you see yourself contributing to our team?',
-            'What questions do you have about our company and culture?'
-        ];
+    // Reset or clear cached data
+    clearCache() {
+        this.questionCache.clear();
     }
 }
 
-// Initialize and make globally available
-window.OpenAIService = new OpenAIService();
+// Create and export singleton instance
+const openaiService = new OpenAIService();
+export default openaiService;

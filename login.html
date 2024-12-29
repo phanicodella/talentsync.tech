@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TalentSync - Login/Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        .auth-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 1rem;
+        }
+        .btn-switch-form {
+            color: #0d6efd;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-switch-form:hover {
+            text-decoration: underline;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container auth-container">
+        <div class="row">
+            <div class="col-md-7 mb-4">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <!-- Login Form -->
+                        <form id="loginForm" class="needs-validation" novalidate>
+                            <h3 class="mb-4">Login to TalentSync</h3>
+                            <div id="loginErrorContainer" class="alert alert-danger" style="display: none;"></div>
+                            
+                            <div class="mb-3">
+                                <label for="loginEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="loginEmail" required>
+                                <div class="invalid-feedback">Please enter a valid email address</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="loginPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="loginPassword" required>
+                                <div class="invalid-feedback">Please enter your password</div>
+                                <div class="text-end mt-2">
+                                    <a href="#" id="forgotPasswordLink" class="text-muted small">Forgot Password?</a>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                                </button>
+                                <button type="button" id="switchToRegister" class="btn btn-outline-secondary">
+                                    <i class="bi bi-person-plus me-2"></i>Create an Account
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Registration Form -->
+                        <form id="registerForm" class="needs-validation" novalidate style="display: none;">
+                            <h3 class="mb-4">Create Your Account</h3>
+                            <div id="registerErrorContainer" class="alert alert-danger" style="display: none;"></div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="firstName" class="form-label">First Name</label>
+                                    <input type="text" class="form-control" id="firstName" required>
+                                    <div class="invalid-feedback">Please enter your first name</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="lastName" class="form-label">Last Name</label>
+                                    <input type="text" class="form-control" id="lastName" required>
+                                    <div class="invalid-feedback">Please enter your last name</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="registerEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="registerEmail" required>
+                                <div class="invalid-feedback">Please enter a valid email address</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="registerPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="registerPassword" required 
+                                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$">
+                                <div class="form-text text-muted">
+                                    Password must:
+                                    <ul class="small">
+                                        <li>Be at least 8 characters long</li>
+                                        <li>Contain uppercase and lowercase letters</li>
+                                        <li>Include a number and special character</li>
+                                    </ul>
+                                </div>
+                                <div class="invalid-feedback">Please choose a strong password</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="roleSelect" class="form-label">Account Type</label>
+                                <select class="form-select" id="roleSelect" required>
+                                    <option value="interviewer">Interviewer</option>
+                                    <option value="recruiter">Recruiter</option>
+                                </select>
+                                <div class="invalid-feedback">Please select an account type</div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-person-plus me-2"></i>Register
+                                </button>
+                                <button type="button" id="switchToLogin" class="btn btn-outline-secondary">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>Already have an account?
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Forgot Password Form -->
+                        <form id="forgotPasswordForm" class="needs-validation" novalidate style="display: none;">
+                            <h3 class="mb-4">Reset Your Password</h3>
+                            <div id="forgotPasswordErrorContainer" class="alert alert-danger" style="display: none;"></div>
+                            <div id="forgotPasswordSuccessContainer" class="alert alert-success" style="display: none;"></div>
+                            
+                            <div class="mb-3">
+                                <label for="forgotEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="forgotEmail" required>
+                                <div class="invalid-feedback">Please enter a valid email address</div>
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-key me-2"></i>Reset Password
+                                </button>
+                                <button type="button" id="backToLogin" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to Login
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interview Access Section -->
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-body p-4">
+                        <h3 class="mb-4">Join an Interview</h3>
+                        <form id="interviewAccessForm" class="needs-validation" novalidate>
+                            <div id="interviewAccessErrorContainer" class="alert alert-danger" style="display: none;"></div>
+                            
+                            <div class="mb-3">
+                                <label for="interviewLink" class="form-label">Interview Link or Code</label>
+                                <input type="text" class="form-control" id="interviewLink" required 
+                                    placeholder="Enter interview code">
+                                <div class="invalid-feedback">Please enter a valid interview link or code</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="candidateName" class="form-label">Your Name</label>
+                                <input type="text" class="form-control" id="candidateName" required>
+                                <div class="invalid-feedback">Please enter your name</div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-door-open me-2"></i>Join Interview
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import authService from './src/js/services/authService.js';
+        import configService from './src/js/services/configService.js';
+
+        // UI Element References
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+        const interviewAccessForm = document.getElementById('interviewAccessForm');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Form Switch Handlers
+        document.getElementById('switchToRegister')?.addEventListener('click', () => {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+        });
+
+        document.getElementById('switchToLogin')?.addEventListener('click', () => {
+            registerForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
+
+        document.getElementById('forgotPasswordLink')?.addEventListener('click', () => {
+            loginForm.style.display = 'none';
+            forgotPasswordForm.style.display = 'block';
+        });
+
+        document.getElementById('backToLogin')?.addEventListener('click', () => {
+            forgotPasswordForm.style.display = 'none';
+            loginForm.style.display = 'block';
+        });
+
+        // Error Display Utility
+        function displayError(containerID, message) {
+            const container = document.getElementById(containerID);
+            container.textContent = message;
+            container.style.display = 'block';
+        }
+
+        function clearErrors(containerID) {
+            const container = document.getElementById(containerID);
+            container.textContent = '';
+            container.style.display = 'none';
+        }
+
+        // Loading State Handlers
+        function showLoading(show = true) {
+            loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // Login Form Handler
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors('loginErrorContainer');
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                showLoading();
+                const user = await authService.login(email, password);
+                
+                // Redirect based on role
+                window.location.href = user.role === 'admin' 
+                    ? '/admin-dashboard.html' 
+                    : '/interviews.html';
+            } catch (error) {
+                displayError('loginErrorContainer', error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Registration Form Handler
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors('registerErrorContainer');
+
+            const userData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('registerEmail').value,
+                password: document.getElementById('registerPassword').value,
+                role: document.getElementById('roleSelect').value
+            };
+
+            try {
+                showLoading();
+                const user = await authService.register(userData);
+                
+                // Redirect based on role
+                window.location.href = user.role === 'admin' 
+                    ? '/admin-dashboard.html' 
+                    : '/interviews.html';
+            } catch (error) {
+                displayError('registerErrorContainer', error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Forgot Password Form Handler
+        forgotPasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors('forgotPasswordErrorContainer');
+            clearErrors('forgotPasswordSuccessContainer');
+
+            const email = document.getElementById('forgotEmail').value;
+
+            try {
+                showLoading();
+                const result = await authService.requestPasswordReset(email);
+                
+                const successContainer = document.getElementById('forgotPasswordSuccessContainer');
+                successContainer.textContent = result.message || 'Password reset instructions sent to your email';
+                successContainer.style.display = 'block';
+            } catch (error) {
+                displayError('forgotPasswordErrorContainer', error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Interview Access Form Handler
+        interviewAccessForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearErrors('interviewAccessErrorContainer');
+
+            const interviewLink = document.getElementById('interviewLink').value;
+            const candidateName = document.getElementById('candidateName').value;
+
+            try {
+                showLoading();
+                // Extract interview ID from link
+                const interviewId = interviewLink.split('/').pop();
+                
+                const result = await authService.joinInterview(interviewId, candidateName);
+                
+                // Redirect to interview room
+                window.location.href = `/interview-room.html?id=${interviewId}`;
+            } catch (error) {
+                displayError('interviewAccessErrorContainer', error.message);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Check if already authenticated
+        if (authService.isAuthenticated()) {
+            const user = authService.getUser();
+            window.location.href = user?.role === 'admin' 
+                ? '/admin-dashboard.html' 
+                : '/interviews.html';
+        }
+
+        // Initialize configuration
+        configService.loadConfig();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

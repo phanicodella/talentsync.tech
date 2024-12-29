@@ -1,810 +1,696 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TalentSync Interview System</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <title>TalentSync - Interview Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .video-container {
-            position: relative;
-            width: 640px;
-            margin: 0 auto;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            padding-top: 20px;
         }
 
-        .analysis-overlay {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 0.9em;
-            backdrop-filter: blur(4px);
-            z-index: 100;
+        .navbar {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,.08);
         }
 
-        .suspicious-alert {
-            background-color: rgba(220, 53, 69, 0.9);
-            border: 2px solid #dc3545;
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 1.5rem;
         }
 
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 5px;
+        .dashboard-header {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
 
-        .status-active {
-            background-color: #28a745;
-            animation: pulse 2s infinite;
+        .status-badge {
+            padding: 0.35rem 0.65rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
         }
 
-        .status-warning {
-            background-color: #ffc107;
+        .status-scheduled {
+            background-color: #cff4fc;
+            color: #055160;
         }
 
-        .status-error {
-            background-color: #dc3545;
+        .status-completed {
+            background-color: #d1e7dd;
+            color: #0f5132;
         }
 
-        @keyframes pulse {
-            0% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.5;
-            }
-
-            100% {
-                opacity: 1;
-            }
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #842029;
         }
 
-        .debug-panel {
-            background: #f8f9fa;
-            border-radius: 4px;
-            padding: 10px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 0.8em;
-            display: none;
+        .status-ongoing {
+            background-color: #fff3cd;
+            color: #664d03;
         }
 
-        .debug-panel.visible {
-            display: block;
+        .interview-card {
+            transition: transform 0.2s;
         }
 
-        #audioMeter {
+        .interview-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .action-buttons {
+            white-space: nowrap;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 20px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        #audioMeterFill {
             height: 100%;
-            background: #28a745;
-            transition: width 0.1s ease;
-            width: 0%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
 
-        .timer {
-            font-family: monospace;
-            font-size: 1.2em;
-            color: #666;
+        .filters-section {
+            background: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        .trait-score {
-            font-size: 0.9em;
-            color: #666;
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
         }
 
-        .analysis-card {
-            border-left: 4px solid #0d6efd;
-            margin-bottom: 15px;
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0d6efd;
         }
 
-        .flag-item {
+        .interview-link {
             background: #f8f9fa;
-            padding: 8px;
-            margin-bottom: 8px;
-            border-radius: 4px;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            word-break: break-all;
         }
-        .main-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        padding: 20px;
-    }
 
-    .video-section {
-        position: sticky;
-        top: 20px;
-    }
-
-    .video-container {
-        position: relative;
-        width: 100%;
-        margin: 0 auto;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .interview-section {
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .controls-section {
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        margin-top: 15px;
-    }
-
-    #videoElement {
-        width: 100%;
-        max-width: 640px;
-        border-radius: 8px;
-    }
-
-    @media (max-width: 1200px) {
-        .main-container {
-            grid-template-columns: 1fr;
+        .copy-button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
         }
-        
-        .video-section {
-            position: relative;
+
+        .alert-float {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            opacity: 0;
+            transform: translateY(-100%);
+            transition: all 0.3s ease-in-out;
         }
-    }
+
+        .alert-float.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+        }
     </style>
 </head>
-
 <body>
-    
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col">
-            <h2 class="d-flex align-items-center justify-content-between">
-                <div>
-                    <i class="bi bi-camera-video me-2"></i>
-                    TalentSync Interview Session
-                    <span id="sessionStatus" class="badge bg-secondary ms-2">Not Started</span>
-                </div>
-                <div class="timer" id="timer">00:00</div>
-            </h2>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="video-section">
-            <div class="video-container">
-                <video id="videoElement" autoplay playsinline></video>
-                <div id="liveAnalysis" class="analysis-overlay"></div>
-            </div>
-            
-            <div class="controls-section">
-                <div class="d-flex justify-content-center gap-2">
-                    <button id="startButton" class="btn btn-primary">
-                        <i class="bi bi-play-fill"></i> Start Interview
-                    </button>
-                    <button id="stopButton" class="btn btn-danger" disabled>
-                        <i class="bi bi-stop-fill"></i> End Interview
-                    </button>
-                    <button id="downloadBtn" class="btn btn-outline-primary" disabled>
-                        <i class="bi bi-download"></i> Download Transcript
-                    </button>
-                    <button id="toggleDebug" class="btn btn-secondary">
-                        <i class="bi bi-terminal"></i> Toggle Debug Info
-                    </button>
+    <div class="container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h2><i class="bi bi-calendar-check me-2"></i>Interview Dashboard</h2>
                 </div>
-                
-                <div id="audioMeter" class="mt-3">
-                    <div id="audioMeterFill"></div>
+                <div class="col-md-6 text-md-end">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleModal">
+                        <i class="bi bi-plus-circle me-2"></i>Schedule Interview
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="interview-section">
-            <div id="openaiAnalysis" class="p-3"></div>
-            <div id="debugPanel" class="debug-panel mx-3 mb-3">
-                <h5>Debug Information</h5>
-                <pre id="debugInfo"></pre>
+        <!-- Stats Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="totalInterviews">0</div>
+                    <div class="text-muted">Total Interviews</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="completedInterviews">0</div>
+                    <div class="text-muted">Completed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="upcomingInterviews">0</div>
+                    <div class="text-muted">Upcoming</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="stats-number" id="todayInterviews">0</div>
+                    <div class="text-muted">Today's Interviews</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="typeFilter">
+                        <option value="">All</option>
+                        <option value="technical">Technical</option>
+                        <option value="hr">HR</option>
+                        <option value="final">Final</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date Range</label>
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sort By</label>
+                    <select class="form-select" id="sortFilter">
+                        <option value="date-desc">Date (Newest)</option>
+                        <option value="date-asc">Date (Oldest)</option>
+                        <option value="name">Candidate Name</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interviews List -->
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="interviewsTable">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Date & Time</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Interview Link</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interviewsList">
+                            <!-- Interviews will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
-    <script src="src/js/services/config.js"></script>
-<script src="src/js/services/openaiService.js"></script>
-<script>
-let openaiService;
 
-document.addEventListener('DOMContentLoaded', () => {
-    openaiService = new OpenAIService();
+    <!-- Schedule Interview Modal -->
+    <div class="modal fade" id="scheduleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Schedule New Interview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="scheduleForm" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Name</label>
+                            <input type="text" class="form-control" id="candidateName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Candidate Email</label>
+                            <input type="email" class="form-control" id="candidateEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Interview Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="interviewDateTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Interview Type</label>
+                            <select class="form-select" id="interviewType" required>
+                                <option value="">Select type...</option>
+                                <option value="technical">Technical</option>
+                                <option value="hr">HR</option>
+                                <option value="final">Final Round</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea class="form-control" id="interviewNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="scheduleButton">Schedule</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    const elements = {
-        video: document.getElementById('videoElement'),
-        startBtn: document.getElementById('startButton'),
-        stopBtn: document.getElementById('stopButton'),
-        downloadBtn: document.getElementById('downloadBtn'),
-        behaviorAnalysis: document.getElementById('behaviorAnalysis'),
-        openaiAnalysis: document.getElementById('openaiAnalysis'),
-        debugPanel: document.getElementById('debugPanel'),
-        debugInfo: document.getElementById('debugInfo'),
-        toggleDebug: document.getElementById('toggleDebug'),
-        sessionStatus: document.getElementById('sessionStatus'),
-        audioMeterFill: document.getElementById('audioMeterFill'),
-        timer: document.getElementById('timer'),
-        liveAnalysis: document.getElementById('liveAnalysis')
-    };
+    <!-- View Interview Modal -->
+    <div class="modal fade" id="viewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Interview Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="viewModalBody">
+                    <!-- Interview details will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
-    let state = {
-        mediaRecorder: null,
-        monitoringInterval: null,
-        videoStream: null,
-        audioContext: null,
-        audioAnalyser: null,
-        isRecording: false,
-        recognition: null,
-        transcriptText: '',
-        startTime: null,
-        intervalTimer: null,
-        behaviorData: []
-    };
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import authService from './src/js/services/authService.js';
+        import interviewService from './src/js/services/interviewService.js';
 
-    function startTimer() {
-        state.startTime = new Date();
-        state.intervalTimer = setInterval(updateTimer, 1000);
-    }
-
-    function stopTimer() {
-        if (state.intervalTimer) {
-            clearInterval(state.intervalTimer);
-        }
-    }
-
-    function updateTimer() {
-        if (state.startTime) {
-            const now = new Date();
-            const diff = now - state.startTime;
-            const minutes = Math.floor(diff / 60000);
-            const seconds = Math.floor((diff % 60000) / 1000);
-            elements.timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-    }
-
-    class BehaviorMonitor {
-        constructor(videoElement) {
-            this.videoElement = videoElement;
-            this.canvas = document.createElement('canvas');
-            this.context = this.canvas.getContext('2d');
-            this.lastImageData = null;
-            this.suspiciousCount = 0;
-            this.outOfFrameCount = 0;
-            this.movementHistory = [];
-            this.canvas.width = 640;
-            this.canvas.height = 480;
-            this.movementThreshold = 50000;
-            this.previousFrameData = null;
+        // Check authentication
+        if (!authService.isAuthenticated()) {
+            window.location.href = '/login.html';
         }
 
-        analyzeFrame() {
+        // Global state
+        let interviews = [];
+        let filters = {
+            status: '',
+            type: '',
+            date: '',
+            sort: 'date-desc'
+        };
+
+        // Elements
+        const elements = {
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            interviewsList: document.getElementById('interviewsList'),
+            scheduleForm: document.getElementById('scheduleForm'),
+            scheduleButton: document.getElementById('scheduleButton'),
+            scheduleModal: new bootstrap.Modal(document.getElementById('scheduleModal')),
+            viewModal: new bootstrap.Modal(document.getElementById('viewModal')),
+            statusFilter: document.getElementById('statusFilter'),
+            typeFilter: document.getElementById('typeFilter'),
+            dateFilter: document.getElementById('dateFilter'),
+            sortFilter: document.getElementById('sortFilter')
+        };
+
+        // Initialize
+        async function initialize() {
+            showLoading(true);
             try {
-                this.context.drawImage(this.videoElement, 0, 0, this.canvas.width, this.canvas.height);
-                const currentImageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
-
-                if (this.previousFrameData) {
-                    const analysis = this.detectAnomalies(currentImageData);
-                    this.updateUI(analysis);
-                }
-
-                this.previousFrameData = currentImageData;
+                await loadInterviews();
+                setupEventListeners();
+                updateStats();
             } catch (error) {
-                console.error('Frame analysis failed:', error);
+                showError('Failed to load interviews');
+            } finally {
+                showLoading(false);
             }
         }
 
-        detectAnomalies(currentImageData) {
-            let movementScore = 0;
-            let presenceScore = 0;
+        // Load interviews
+        async function loadInterviews() {
+            const response = await interviewService.getAllInterviews();
+            interviews = response.interviews || [];
+            renderInterviews();
+        }
 
-            if (this.previousFrameData) {
-                for (let i = 0; i < currentImageData.length; i += 16) {
-                    const diff = Math.abs(currentImageData[i] - this.previousFrameData[i]);
-                    movementScore += diff;
+        // Render interviews list
+        function renderInterviews() {
+            let filteredInterviews = filterInterviews(interviews);
+            
+            elements.interviewsList.innerHTML = filteredInterviews.map(interview => `
+                <tr>
+                    <td>
+                        <div class="fw-bold">${interview.candidateName}</div>
+                        <div class="text-muted small">${interview.candidateEmail}</div>
+                    </td>
+                    <td>${formatDateTime(interview.interviewDate)}</td>
+                    <td><span class="badge bg-secondary">${formatType(interview.interviewType)}</span></td>
+                    <td><span class="status-badge status-${interview.status.toLowerCase()}">${formatStatus(interview.status)}</span></td>
+                    <td>
+                        <div class="interview-link">
+                            ${getInterviewLink(interview._id)}
+                            <button class="btn btn-sm btn-outline-primary copy-button" onclick="copyInterviewLink('${interview._id}')">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="action-buttons">
+                        ${generateActionButtons(interview)}
+                    </td>
+                </tr>
+            `).join('');
+
+            updateStats();
+        }
+
+        // Filter interviews
+        function filterInterviews(interviews) {
+            return interviews.filter(interview => {
+                if (filters.status && interview.status !== filters.status) return false;
+                if (filters.type && interview.interviewType !== filters.type) return false;
+                if (filters.date) {
+                    const interviewDate = new Date(interview.interviewDate).toLocaleDateString();
+                    const filterDate = new Date(filters.date).toLocaleDateString();
+                    if (interviewDate !== filterDate) return false;
                 }
-                presenceScore = this.calculatePresenceScore(currentImageData);
-            }
+                return true;
+            }).sort((a, b) => {
+                switch (filters.sort) {
+                    case 'date-asc':
+                        return new Date(a.interviewDate) - new Date(b.interviewDate);
+                    case 'date-desc':
+                        return new Date(b.interviewDate) - new Date(a.interviewDate);
+                    case 'name':
+                        return a.candidateName.localeCompare(b.candidateName);
+                    default:
+                        return 0;
+                }
+            });
+        }
 
-            this.movementHistory.push(movementScore);
-            if (this.movementHistory.length > 10) {
-                this.movementHistory.shift();
-            }
-
-            return {
-                movementScore,
-                presenceScore,
-                isHighMovement: movementScore > this.movementThreshold,
-                isAbsent: presenceScore < 30,
-                isErratic: this.detectErraticMovement()
+        // Update statistics
+        function updateStats() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const stats = {
+                total: interviews.length,
+                completed: interviews.filter(i => i.status === 'completed').length,
+                upcoming: interviews.filter(i => new Date(i.interviewDate) > now && i.status === 'scheduled').length,
+                today: interviews.filter(i => {
+                    const interviewDate = new Date(i.interviewDate);
+                    return interviewDate >= today && interviewDate < new Date(today.getTime() + 24 * 60 * 60 * 1000);
+                }).length
             };
+
+            document.getElementById('totalInterviews').textContent = stats.total;
+            document.getElementById('completedInterviews').textContent = stats.completed;
+            document.getElementById('upcomingInterviews').textContent = stats.upcoming;
+            document.getElementById('todayInterviews').textContent = stats.today;
         }
 
-        calculatePresenceScore(imageData) {
-            let score = 0;
-            for (let i = 0; i < imageData.length; i += 16) {
-                const brightness = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
-                if (brightness > 50) score++;
-            }
-            return (score / (imageData.length / 16)) * 100;
-        }
+        // Event Listeners
+        function setupEventListeners() {
+            // Filter change handlers
+            elements.statusFilter.addEventListener('change', handleFilterChange);
+            elements.typeFilter.addEventListener('change', handleFilterChange);
+            elements.dateFilter.addEventListener('change', handleFilterChange);
+            elements.sortFilter.addEventListener('change', handleFilterChange);
 
-        detectErraticMovement() {
-            if (this.movementHistory.length < 5) return false;
+            // Schedule form handler
+            elements.scheduleButton.addEventListener('click', handleScheduleSubmit);
 
-            const recentAvg = this.movementHistory.slice(-3).reduce((a, b) => a + b, 0) / 3;
-            const previousAvg = this.movementHistory.slice(-6, -3).reduce((a, b) => a + b, 0) / 3;
+            // Setup copy link handlers
+            window.copyInterviewLink = copyInterviewLink;
             
-            return Math.abs(recentAvg - previousAvg) > 30000;
+            // Setup action button handlers
+            window.startInterview = startInterview;
+            window.cancelInterview = cancelInterview;
+            window.viewInterview = viewInterview;
         }
 
-        updateUI(analysis) {
-            if (analysis.isHighMovement || analysis.isAbsent || analysis.isErratic) {
-                this.suspiciousCount++;
-            }
-
-            if (analysis.isAbsent) {
-                this.outOfFrameCount++;
-            }
-
-            const isSuspicious = this.suspiciousCount > 5;
-            const analysisDiv = elements.liveAnalysis;
-            
-            analysisDiv.className = `analysis-overlay ${isSuspicious ? 'suspicious-alert' : ''} visible`;
-            analysisDiv.innerHTML = `
-                <div>
-                    <p>
-                        <span class="status-indicator ${analysis.isHighMovement ? 'status-warning' : 'status-active'}"></span>
-                        Movement: ${analysis.isHighMovement ? '⚠️ High' : '✓ Normal'}
-                    </p>
-                    <p>
-                        <span class="status-indicator ${analysis.isAbsent ? 'status-error' : 'status-active'}"></span>
-                        Presence: ${analysis.isAbsent ? '⚠️ Absent' : '✓ Present'}
-                    </p>
-                    ${isSuspicious ? '<p class="text-warning">⚠️ Suspicious Activity Detected</p>' : ''}
-                </div>
-            `;
-        }
-    }
-    class SpeechRecognitionHandler {
-    constructor() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            throw new Error('Speech Recognition not supported in this browser');
-        }
-        this.recognition = new SpeechRecognition();
-        this.transcriptText = '';
-        this.currentQuestionIndex = 0;
-        this.isActive = false;
-        this.setupRecognition();
-    }
-
-    setupRecognition() {
-        this.recognition.continuous = true;
-        this.recognition.interimResults = true;
-        this.recognition.maxAlternatives = 1;
-        this.recognition.lang = 'en-US';
-
-        this.recognition.onstart = () => {
-            console.log('Recognition started');
-            this.isActive = true;
-            if (elements.video) {
-                elements.video.muted = true;
-            }
-        };
-
-        this.recognition.onend = () => {
-            console.log('Recognition ended');
-            if (this.isActive) {
-                try {
-                    setTimeout(() => this.recognition.start(), 50);
-                } catch (e) {
-                    console.error('Failed to restart recognition:', e);
-                }
-            }
-        };
-
-        this.recognition.onerror = (event) => {
-            console.error('Recognition error:', event.error);
-            if (event.error !== 'no-speech' && this.isActive) {
-                this.isActive = false;
-            }
-        };
-
-        // Add the onresult handler here
-        this.recognition.onresult = this.onresult.bind(this);
-    }
-
-    onresult(event) {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-                finalTranscript += transcript + ' ';
-                this.transcriptText += transcript + ' ';
-                
-                // Check if response is complete enough to move to next question
-                const nextQuestion = openaiService.nextQuestion(this.transcriptText);
-                if (nextQuestion.index !== this.currentQuestionIndex) {
-                    this.currentQuestionIndex = nextQuestion.index;
-                    this.transcriptText = ''; // Clear for next response
-                }
-            } else {
-                interimTranscript += transcript;
-            }
+        // Filter change handler
+        function handleFilterChange(event) {
+            filters[event.target.id.replace('Filter', '')] = event.target.value;
+            renderInterviews();
         }
 
-        this.updateDisplay(interimTranscript);
-    }
+        // Schedule submit handler
+        async function handleScheduleSubmit() {
+            const form = elements.scheduleForm;
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
 
-    updateDisplay(interim = '') {
-        const currentQ = openaiService.getCurrentQuestion();
-        const transcriptHistory = openaiService.transcriptHistory
-            .map(item => `
-                <div class="qa-pair mb-3 p-2 border-bottom">
-                    <div class="question">
-                        <span class="badge bg-primary me-2">${item.category}</span>
-                        <strong>Q:</strong> ${item.question}
-                    </div>
-                    <div class="answer ms-3 mt-1">
-                        <strong>A:</strong> ${item.response}
-                    </div>
-                </div>
-            `)
-            .join('');
-
-        elements.openaiAnalysis.innerHTML = `
-            <div class="alert alert-success">
-                <h5>Interview Progress</h5>
-                <div class="current-question mb-3 p-3 bg-light border-start border-4 border-primary">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-primary mb-0">Question ${currentQ.index} of ${currentQ.total}</h6>
-                        <span class="badge bg-primary">${currentQ.category}</span>
-                    </div>
-                    <p class="fs-5 mb-0">${currentQ.question}</p>
-                </div>
-                
-                <div class="transcript mt-4">
-                    ${transcriptHistory}
-                    
-                    <div class="current-response">
-                        <div class="question">
-                            <span class="badge bg-success me-2">Current</span>
-                            <strong>Q:</strong> ${currentQ.question}
-                        </div>
-                        <div class="answer ms-3 mt-1">
-                            <strong>A:</strong> ${this.transcriptText}
-                            ${interim ? `<span class="text-muted"><em>${interim}</em></span>` : ''}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-3">
-                    <small class="text-muted d-flex align-items-center">
-                        <span class="badge ${this.isActive ? 'bg-success' : 'bg-secondary'} me-2">
-                            ${this.isActive ? 'Listening' : 'Paused'}
-                        </span>
-                        Last updated: ${new Date().toLocaleTimeString()}
-                    </small>
-                </div>
-            </div>
-        `;
-    }
-
-    start() {
-        this.isActive = true;
-        this.transcriptText = '';
-        
-        if (elements.video) {
-            elements.video.muted = true;
-        }
-        
-        try {
-            this.recognition.start();
-        } catch (e) {
-            console.error('Recognition start error:', e);
-            this.isActive = false;
-            throw e;
-        }
-    }
-
-    stop() {
-        this.isActive = false;
-        if (this.recognition) {
+            showLoading(true);
             try {
-                this.recognition.stop();
-            } catch (e) {
-                console.error('Recognition stop error:', e);
+                const interviewData = {
+                    candidateName: document.getElementById('candidateName').value,
+                    candidateEmail: document.getElementById('candidateEmail').value,
+                    interviewDate: document.getElementById('interviewDateTime').value,
+                    interviewType: document.getElementById('interviewType').value,
+                    notes: document.getElementById('interviewNotes').value
+                };
+
+                await interviewService.createInterview(interviewData);
+                elements.scheduleModal.hide();
+                form.reset();
+                form.classList.remove('was-validated');
+                await loadInterviews();
+                showSuccess('Interview scheduled successfully');
+            } catch (error) {
+                showError('Failed to schedule interview');
+            } finally {
+                showLoading(false);
             }
         }
-    }
-}// Add this CSS to your stylesheet
-const style = document.createElement('style');
-style.textContent = `
-    .pulse-animation {
-        animation: pulse 1s ease-in-out;
-    }
-    
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-    
-    .current-question {
-        transition: all 0.3s ease-in-out;
-        padding: 10px;
-        border-radius: 5px;
-        background-color: rgba(13, 110, 253, 0.05);
-        border-left: 4px solid #0d6efd;
-    }
-`;
-document.head.appendChild(style);
-    function generateAnalysisHTML(transcript, analysis) {
-        return `
-            <div class="alert alert-success">
-                <h5>Interview Analysis</h5>
-                <div class="card analysis-card mb-3">
-                    <div class="card-body">
-                        <h6>Interview Transcript:</h6>
-                        <p class="text-muted">${transcript}</p>
-                    </div>
-                </div>
-                <div class="card analysis-card mb-3">
-                    <div class="card-body">
-                        <h6>AI Analysis Results</h6>
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <h6 class="text-primary">Key Traits Assessment:</h6>
-                                <ul class="list-unstyled">
-                                    ${Object.entries(analysis.key_traits).map(([trait, score]) => `
-                                        <li class="mb-2">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span>${trait.replace('_', ' ').toUpperCase()}</span>
-                                                <span class="trait-score">${Math.round(score * 100)}%</span>
-                                            </div>
-                                            <div class="progress" style="height: 8px;">
-                                                <div class="progress-bar" role="progressbar" 
-                                                    style="width: ${score * 100}%" 
-                                                    aria-valuenow="${score * 100}" 
-                                                    aria-valuemin="0" 
-                                                    aria-valuemax="100">
-                                                </div>
-                                            </div>
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="text-primary">Behavioral Indicators:</h6>
-                                <div class="flags-container">
-                                    ${analysis.behavioral_flags.map(flag => `
-                                        <div class="flag-item">
-                                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                                            ${flag}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <h6 class="text-primary">Recommendations:</h6>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <ul class="list-group">
-                                        ${analysis.recommendations.map(rec => `
-                                            <li class="list-group-item">
-                                                <i class="bi bi-arrow-right-circle text-primary me-2"></i>
-                                                ${rec}
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-warning">Points to Verify:</h6>
-                                    <ul class="list-group">
-                                        ${analysis.risk_factors.map(risk => `
-                                            <li class="list-group-item">
-                                                <i class="bi bi-exclamation-triangle text-warning me-2"></i>
-                                                ${risk}
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="mt-4">
-                                <h6 class="text-primary">Suggested Follow-up Questions:</h6>
-                                <ul class="list-group">
-                                    ${analysis.followUpQuestions.map(question => `
-                                        <li class="list-group-item">
-                                            <i class="bi bi-question-circle text-primary me-2"></i>
-                                            ${question}
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-3 text-end">
-                    <small class="text-muted">Analysis completed at ${new Date().toLocaleTimeString()}</small>
-                </div>
-            </div>
-        `;
-    }
 
-    async function startInterview() {
-    try {
-        elements.sessionStatus.textContent = 'Initializing...';
-        elements.sessionStatus.className = 'badge bg-info';
-
-        startTimer();
-
-        // Get media stream with specific constraints
-        state.videoStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                frameRate: { ideal: 30 }
-            },
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: false
+        // Action button generators and handlers
+        function generateActionButtons(interview) {
+            const buttons = [];
+            
+            switch (interview.status) {
+                case 'scheduled':
+                    buttons.push(`
+                        <button class="btn btn-sm btn-success me-1" onclick="startInterview('${interview._id}')">
+                            <i class="bi bi-play-fill"></i> Start
+                        </button>
+                        <button class="btn btn-sm btn-danger me-1" onclick="cancelInterview('${interview._id}')">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    `);
+                    break;
+                case 'completed':
+                    buttons.push(`
+                        <button class="btn btn-sm btn-primary me-1" onclick="viewInterview('${interview._id}')">
+                            <i class="bi bi-eye"></i> View Results
+                        </button>
+                    `);
+                    break;
             }
-        });
 
-        // Set up video with muted audio
-        elements.video.srcObject = state.videoStream;
-        elements.video.muted = true;  // Prevent echo
+            buttons.push(`
+                <button class="btn btn-sm btn-outline-secondary" onclick="viewInterview('${interview._id}')">
+                    <i class="bi bi-info-circle"></i> Details
+                </button>
+            `);
 
-        const monitor = new BehaviorMonitor(elements.video);
-        state.monitoringInterval = setInterval(() => monitor.analyzeFrame(), 1000);
-
-        state.recognition = new SpeechRecognitionHandler();
-        state.recognition.start();
-
-        state.isRecording = true;
-        elements.startBtn.disabled = true;
-        elements.stopBtn.disabled = false;
-        elements.downloadBtn.disabled = true;
-        elements.sessionStatus.textContent = 'Recording';
-        elements.sessionStatus.className = 'badge bg-success';
-    } catch (error) {
-        console.error('Start interview error:', error);
-        elements.sessionStatus.textContent = 'Error';
-        elements.sessionStatus.className = 'badge bg-danger';
-        alert('Failed to start interview. Please ensure camera and microphone permissions are granted.');
-    }
-}
-async function stopInterview() {
-    try {
-        state.isRecording = false;
-        stopTimer();
-
-        if (state.recognition) {
-            state.recognition.stop();
+            return buttons.join('');
         }
 
-        if (state.videoStream) {
-            state.videoStream.getTracks().forEach(track => track.stop());
+        async function startInterview(id) {
+            window.location.href = `/interview-room.html?id=${id}`;
         }
 
-        clearInterval(state.monitoringInterval);
-        elements.video.srcObject = null;
-        elements.startBtn.disabled = false;
-        elements.stopBtn.disabled = true;
-        elements.downloadBtn.disabled = false;
+        async function cancelInterview(id) {
+            if (!confirm('Are you sure you want to cancel this interview?')) return;
 
-        elements.liveAnalysis.className = 'analysis-overlay';
-        elements.liveAnalysis.innerHTML = '';
+            showLoading(true);
+            try {
+                await interviewService.updateInterviewStatus(id, 'cancelled');
+                await loadInterviews();
+                showSuccess('Interview cancelled successfully');
+            } catch (error) {
+                showError('Failed to cancel interview');
+            } finally {
+                showLoading(false);
+            }
+        }
 
-        // Get full transcript from OpenAI service history
-        const fullTranscript = openaiService.getFormattedTranscript();
-        
-        if (!fullTranscript || fullTranscript.trim().length === 0) {
-            elements.openaiAnalysis.innerHTML = `
-                <div class="alert alert-warning">
-                    <h5>No Interview Content</h5>
-                    <p>No interview responses were recorded. Please try again.</p>
+        async function viewInterview(id) {
+            showLoading(true);
+            try {
+                const interview = await interviewService.getInterviewById(id);
+                renderInterviewDetails(interview);
+                elements.viewModal.show();
+            } catch (error) {
+                showError('Failed to load interview details');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Interview details renderer
+        function renderInterviewDetails(interview) {
+            const modalBody = document.getElementById('viewModalBody');
+            modalBody.innerHTML = `
+                <div class="interview-details">
+                    <div class="mb-4">
+                        <h6 class="text-muted">Candidate Information</h6>
+                        <p class="mb-1"><strong>Name:</strong> ${interview.candidateName}</p>
+                        <p class="mb-1"><strong>Email:</strong> ${interview.candidateEmail}</p>
+                        <p class="mb-1"><strong>Status:</strong> <span class="status-badge status-${interview.status.toLowerCase()}">${formatStatus(interview.status)}</span></p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-muted">Interview Details</h6>
+                        <p class="mb-1"><strong>Date & Time:</strong> ${formatDateTime(interview.interviewDate)}</p>
+                        <p class="mb-1"><strong>Type:</strong> ${formatType(interview.interviewType)}</p>
+                        ${interview.notes ? `<p class="mb-1"><strong>Notes:</strong> ${interview.notes}</p>` : ''}
+                    </div>
+
+                    ${interview.status === 'completed' ? `
+                        <div class="mb-4">
+                            <h6 class="text-muted">Results</h6>
+                            <p class="mb-1"><strong>Duration:</strong> ${formatDuration(interview.duration)}</p>
+                            <p class="mb-1"><strong>Score:</strong> ${interview.score || 'N/A'}</p>
+                            ${interview.feedback ? `<p class="mb-1"><strong>Feedback:</strong> ${interview.feedback}</p>` : ''}
+                        </div>
+                    ` : ''}
+
+                    <div class="interview-link-section">
+                        <h6 class="text-muted">Interview Link</h6>
+                        <div class="interview-link">
+                            ${getInterviewLink(interview._id)}
+                            <button class="btn btn-sm btn-outline-primary copy-button" onclick="copyInterviewLink('${interview._id}')">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
-            return;
         }
 
-        elements.openaiAnalysis.innerHTML = `
-            <div class="alert alert-info">
-                <div class="spinner-border spinner-border-sm" role="status"></div>
-                Analyzing interview...
-            </div>
-        `;
+        // Utility functions
+        function formatDateTime(date) {
+            return new Date(date).toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
 
-        try {
-            const [analysis, followUpQuestions] = await Promise.all([
-                openaiService.analyzeInterview(fullTranscript),
-                openaiService.generateFollowUpQuestions(fullTranscript)
-            ]);
-
-            const fullAnalysis = {
-                ...analysis,
-                followUpQuestions
+        function formatType(type) {
+            const types = {
+                technical: 'Technical',
+                hr: 'HR',
+                final: 'Final Round'
             };
+            return types[type] || type;
+        }
 
-            elements.openaiAnalysis.innerHTML = generateAnalysisHTML(fullTranscript, fullAnalysis);
-            elements.downloadBtn.disabled = false;
-        } catch (error) {
-            console.error('Analysis error:', error);
-            elements.openaiAnalysis.innerHTML = `
-                <div class="alert alert-danger">
-                    <h5>Analysis Failed</h5>
-                    <p>There was an error analyzing the interview. Please try again later.</p>
-                    <small>${error.message}</small>
-                </div>
+        function formatStatus(status) {
+            const statuses = {
+                scheduled: 'Scheduled',
+                completed: 'Completed',
+                cancelled: 'Cancelled',
+                ongoing: 'In Progress'
+            };
+            return statuses[status] || status;
+        }
+
+        function formatDuration(duration) {
+            if (!duration) return 'N/A';
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            return `${minutes}m ${seconds}s`;
+        }
+
+        function getInterviewLink(id) {
+            const baseUrl = window.location.origin;
+            return `${baseUrl}/interview-room.html?id=${id}`;
+        }
+
+        async function copyInterviewLink(id) {
+            const link = getInterviewLink(id);
+            try {
+                await navigator.clipboard.writeText(link);
+                showSuccess('Interview link copied to clipboard');
+            } catch (error) {
+                showError('Failed to copy link');
+            }
+        }
+
+        function showLoading(show) {
+            elements.loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        function showSuccess(message) {
+            showAlert(message, 'success');
+        }
+
+        function showError(message) {
+            showAlert(message, 'danger');
+        }
+
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible alert-float`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => alertDiv.classList.add('show'), 100);
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 300);
+            }, 3000);
         }
 
-        state.transcriptText = fullTranscript;
-        elements.sessionStatus.textContent = 'Completed';
-        elements.sessionStatus.className = 'badge bg-success';
-
-    } catch (error) {
-        console.error('Stop interview error:', error);
-        elements.sessionStatus.textContent = 'Error';
-        elements.sessionStatus.className = 'badge bg-danger';
-    }
-}
-    function downloadTranscript() {
-        if (state.transcriptText) {
-            const date = new Date().toISOString().slice(0, 10);
-            const time = new Date().toTimeString().slice(0, 8).replace(/:/g, '-');
-            const filename = `interview-transcript-${date}-${time}.txt`;
-
-            const blob = new Blob([state.transcriptText], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-    }
-
-    elements.startBtn.addEventListener('click', startInterview);
-    elements.stopBtn.addEventListener('click', stopInterview);
-    elements.downloadBtn.addEventListener('click', downloadTranscript);
-    elements.toggleDebug.addEventListener('click', () => {
-        config.DEBUG_MODE = !config.DEBUG_MODE;
-        elements.debugPanel.classList.toggle('visible');
-    });
-});
-</script>
+        // Initialize the dashboard
+        initialize();
+    </script>
 
 </body>
-
 </html>

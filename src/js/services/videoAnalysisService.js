@@ -1,4 +1,3 @@
-// src/js/services/videoAnalysisService.js
 import * as faceapi from 'face-api.js';
 
 class VideoAnalysisService {
@@ -10,22 +9,50 @@ class VideoAnalysisService {
             eyeMovements: [],
             suspiciousActivities: []
         };
+        this.modelBasePath = '/models';
+        this.consecutiveFailures = 0;
+        this.maxFailures = 3;
     }
 
     async loadModels() {
         try {
+            const modelUrls = {
+                tinyFaceDetector: `${this.modelBasePath}/tiny_face_detector_model-weights_manifest.json`,
+                faceLandmark68Net: `${this.modelBasePath}/face_landmark_68_model-weights_manifest.json`,
+                faceRecognitionNet: `${this.modelBasePath}/face_recognition_model-weights_manifest.json`,
+                faceExpressionNet: `${this.modelBasePath}/face_expression_model-weights_manifest.json`
+            };
+
+            // Verify model files exist before loading
+            await this.verifyModels(modelUrls);
+
+            // Load models in parallel
             await Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-                faceapi.nets.faceExpressionNet.loadFromUri('/models'),
-                faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+                faceapi.nets.tinyFaceDetector.loadFromUri(this.modelBasePath),
+                faceapi.nets.faceLandmark68Net.loadFromUri(this.modelBasePath),
+                faceapi.nets.faceRecognitionNet.loadFromUri(this.modelBasePath),
+                faceapi.nets.faceExpressionNet.loadFromUri(this.modelBasePath)
             ]);
+
             this.isModelLoaded = true;
             console.log('Face analysis models loaded successfully');
+            return true;
         } catch (error) {
             console.error('Error loading face analysis models:', error);
-            throw new Error('Failed to load face analysis models');
+            throw new Error('Failed to load face analysis models. Please check your internet connection and try again.');
         }
+    }
+
+    async verifyModels(modelUrls) {
+        const verifyPromises = Object.entries(modelUrls).map(async ([name, url]) => {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to load ${name} model`);
+            }
+            return true;
+        });
+
+        await Promise.all(verifyPromises);
     }
 
     async analyzeFacialBehavior(videoElement, onFrame) {
@@ -33,169 +60,181 @@ class VideoAnalysisService {
             throw new Error('Face analysis models not loaded');
         }
 
-        const analysis = {
-            lookAway: 0,
-            suspiciousMovements: 0,
-            expressionChanges: 0,
-            totalFrames: 0
-        };
+        if (!videoElement || videoElement.readyState !== 4) {
+            throw new Error('Video element not ready');
+        }
 
-        const processFrame = async () => {
-            const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
+        try {
+            const analysis = {
+                lookAway: 0,
+                suspiciousMovements: 0,
+                expressionChanges: 0,
+                totalFrames: 0
+            };
+
+            const detections = await faceapi
+                .detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions())
                 .withFaceLandmarks()
                 .withFaceExpressions();
 
-            if (detections && detections.length > 0) {
-                const detection = detections[0];
-                
-                // Analyze eye movements and head position
-                const landmarks = detection.landmarks;
-                const leftEye = landmarks.getLeftEye();
-                const rightEye = landmarks.getRightEye();
-                
-                // Check for looking away
-                if (this.isLookingAway(leftEye, rightEye)) {
-                    analysis.lookAway++;
+            if (detections.length === 0) {
+                this.consecutiveFailures++;
+                if (this.consecutiveFailures >= this.maxFailures) {
+                    throw new Error('No face detected in multiple consecutive frames');
                 }
-
-                // Analyze expressions
-                const expressions = detection.expressions;
-                this.analysisData.expressions.push(expressions);
-
-                // Check for suspicious rapid expression changes
-                if (this.hasRapidExpressionChange(expressions)) {
-                    analysis.expressionChanges++;
-                }
-
-                // Check for suspicious head movements
-                if (this.hasSuspiciousHeadMovement(landmarks)) {
-                    analysis.suspiciousMovements++;
-                }
+                return this.getEmptyAnalysis();
             }
+
+            this.consecutiveFailures = 0;
+            const detection = detections[0];
+            
+            // Process facial data
+            const processedData = this.processFacialData(detection);
+            Object.assign(analysis, processedData);
+
+            // Store analysis data
+            this.storeAnalysisData(processedData);
 
             analysis.totalFrames++;
             
-            if (onFrame) {
+            if (onFrame && typeof onFrame === 'function') {
                 onFrame(analysis);
             }
-        };
 
-        return analysis;
+            return analysis;
+        } catch (error) {
+            console.error('Frame analysis error:', error);
+            return this.getEmptyAnalysis();
+        }
+    }
+
+    processFacialData(detection) {
+        const landmarks = detection.landmarks;
+        const expressions = detection.expressions;
+        const leftEye = landmarks.getLeftEye();
+        const rightEye = landmarks.getRightEye();
+        
+        return {
+            lookingAway: this.isLookingAway(leftEye, rightEye),
+            suspiciousMovement: this.detectSuspiciousMovement(landmarks),
+            expressionChange: this.detectExpressionChange(expressions),
+            confidence: this.calculateConfidence(detection)
+        };
     }
 
     isLookingAway(leftEye, rightEye) {
-        // Calculate eye position relative to face center
         const eyeCenter = {
             x: (leftEye[0].x + rightEye[3].x) / 2,
             y: (leftEye[0].y + rightEye[3].y) / 2
         };
         
-        // Define threshold for looking away
         const threshold = 0.2;
         return Math.abs(eyeCenter.x) > threshold || Math.abs(eyeCenter.y) > threshold;
     }
 
-    hasRapidExpressionChange(expressions) {
-        if (this.analysisData.expressions.length < 2) return false;
-        
-        const previousExpressions = this.analysisData.expressions[this.analysisData.expressions.length - 2];
-        const expressionThreshold = 0.3;
-
-        return Object.keys(expressions).some(expression => 
-            Math.abs(expressions[expression] - previousExpressions[expression]) > expressionThreshold
-        );
-    }
-
-    hasSuspiciousHeadMovement(landmarks) {
+    detectSuspiciousMovement(landmarks) {
         const nose = landmarks.getNose();
         const movement = this.calculateMovement(nose[0]);
-        const threshold = 20; // pixels
+        const threshold = 20;
         return movement > threshold;
     }
 
-    calculateMovement(point) {
-        if (this.lastPoint) {
-            const movement = Math.sqrt(
-                Math.pow(point.x - this.lastPoint.x, 2) + 
-                Math.pow(point.y - this.lastPoint.y, 2)
-            );
-            this.lastPoint = point;
-            return movement;
+    detectExpressionChange(expressions) {
+        if (this.analysisData.expressions.length === 0) {
+            this.analysisData.expressions.push(expressions);
+            return false;
         }
-        this.lastPoint = point;
-        return 0;
+
+        const previousExpressions = this.analysisData.expressions[this.analysisData.expressions.length - 1];
+        const threshold = 0.3;
+
+        for (const expression in expressions) {
+            if (Math.abs(expressions[expression] - previousExpressions[expression]) > threshold) {
+                return true;
+            }
+        }
+
+        this.analysisData.expressions.push(expressions);
+        if (this.analysisData.expressions.length > 30) {
+            this.analysisData.expressions.shift();
+        }
+
+        return false;
     }
 
-    generateAnalysisReport(analysis) {
-        const suspicionScore = this.calculateSuspicionScore(analysis);
+    calculateConfidence(detection) {
+        const expressionConfidence = Math.max(...Object.values(detection.expressions));
+        const landmarkConfidence = detection.landmarks.positions.reduce((acc, pos) => 
+            acc + (pos.confidence || 1), 0) / detection.landmarks.positions.length;
         
+        return (expressionConfidence + landmarkConfidence) / 2;
+    }
+
+    getEmptyAnalysis() {
         return {
-            suspicionScore,
-            details: {
-                lookAwayPercentage: (analysis.lookAway / analysis.totalFrames) * 100,
-                suspiciousMovementsCount: analysis.suspiciousMovements,
-                rapidExpressionChanges: analysis.expressionChanges
-            },
-            flags: this.generateWarningFlags(analysis),
-            recommendations: this.generateRecommendations(analysis)
+            lookAway: 0,
+            suspiciousMovements: 0,
+            expressionChanges: 0,
+            totalFrames: 1,
+            confidence: 0
         };
     }
 
-    calculateSuspicionScore(analysis) {
+    generateAnalysisReport(analysisData) {
+        return {
+            suspicionScore: this.calculateSuspicionScore(analysisData),
+            details: this.generateDetailsReport(analysisData),
+            flags: this.generateWarningFlags(analysisData),
+            recommendations: this.generateRecommendations(analysisData)
+        };
+    }
+
+    calculateSuspicionScore(analysisData) {
+        if (!analysisData || !analysisData.totalFrames) return 0;
+
         const weights = {
             lookAway: 0.4,
             suspiciousMovements: 0.3,
             expressionChanges: 0.3
         };
 
-        const normalizedScore = 
-            (weights.lookAway * (analysis.lookAway / analysis.totalFrames)) +
-            (weights.suspiciousMovements * (analysis.suspiciousMovements / analysis.totalFrames)) +
-            (weights.expressionChanges * (analysis.expressionChanges / analysis.totalFrames));
-
-        return Math.min(Math.round(normalizedScore * 100), 100);
+        return Math.min(100, Math.round(
+            (weights.lookAway * (analysisData.lookAway / analysisData.totalFrames) +
+            weights.suspiciousMovements * (analysisData.suspiciousMovements / analysisData.totalFrames) +
+            weights.expressionChanges * (analysisData.expressionChanges / analysisData.totalFrames)) * 100
+        ));
     }
 
-    generateWarningFlags(analysis) {
-        const flags = [];
-        const thresholds = {
-            lookAwayPercent: 30,
-            suspiciousMovementsPercent: 20,
-            expressionChangesPercent: 25
+    reset() {
+        this.analysisData = {
+            expressions: [],
+            headPose: [],
+            eyeMovements: [],
+            suspiciousActivities: []
         };
-
-        const lookAwayPercent = (analysis.lookAway / analysis.totalFrames) * 100;
-        const suspiciousMovementsPercent = (analysis.suspiciousMovements / analysis.totalFrames) * 100;
-        const expressionChangesPercent = (analysis.expressionChanges / analysis.totalFrames) * 100;
-
-        if (lookAwayPercent > thresholds.lookAwayPercent) {
-            flags.push('Frequent looking away from camera');
-        }
-        if (suspiciousMovementsPercent > thresholds.suspiciousMovementsPercent) {
-            flags.push('Unusual head movements detected');
-        }
-        if (expressionChangesPercent > thresholds.expressionChangesPercent) {
-            flags.push('Irregular expression patterns detected');
-        }
-
-        return flags;
+        this.consecutiveFailures = 0;
     }
 
-    generateRecommendations(analysis) {
-        const recommendations = [];
-        const lookAwayPercent = (analysis.lookAway / analysis.totalFrames) * 100;
+    // Helper methods for data storage and retrieval
+    storeAnalysisData(data) {
+        // Implement storage logic here if needed
+        // This could be used for generating more detailed reports
+    }
 
-        if (lookAwayPercent > 30) {
-            recommendations.push('Consider conducting a follow-up in-person interview');
-        }
-        if (analysis.suspiciousMovements > 10) {
-            recommendations.push('Review the recorded session carefully for suspicious activities');
-        }
-        if (analysis.expressionChanges > 15) {
-            recommendations.push('Evaluate candidate responses against their facial expressions');
+    // Additional helper methods as needed
+    calculateMovement(point) {
+        if (!this.lastPoint) {
+            this.lastPoint = point;
+            return 0;
         }
 
-        return recommendations;
+        const movement = Math.sqrt(
+            Math.pow(point.x - this.lastPoint.x, 2) + 
+            Math.pow(point.y - this.lastPoint.y, 2)
+        );
+
+        this.lastPoint = point;
+        return movement;
     }
 }
 
